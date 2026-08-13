@@ -59,6 +59,7 @@ function mapTodo(item: HomeAssistantTodoItem, index: number): TodoItem {
   return {
     id: item.uid ?? `ha-todo-${index}`,
     summary: item.summary?.trim() || '未命名事项',
+    description: item.description?.replace(/\s+/g, ' ').trim() || null,
     due,
     completed: item.status === 'completed',
   };

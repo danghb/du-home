@@ -3,6 +3,7 @@ import { api } from '../../services/api';
 import { useApiData } from '../../hooks/useApiData';
 import { PhotoImage } from '../../components/PhotoImage/PhotoImage';
 import { WeatherScene } from '../../components/WeatherScene/WeatherScene';
+import { selectDisplayedMemos } from './memo-display';
 import styles from './HomePage.module.css';
 
 export function HomePage() {
@@ -18,12 +19,12 @@ export function HomePage() {
   const dashboard = state.data.data;
   const weather = dashboard.weather.status === 'ready' ? dashboard.weather.data : null;
   const todayTodos = dashboard.todayTodos.status === 'ready' ? dashboard.todayTodos.data : [];
-  const memos = dashboard.memos.status === 'ready' ? dashboard.memos.data.slice(0, 5) : [];
+  const memoItems = dashboard.memos.status === 'ready' ? dashboard.memos.data : [];
+  const memos = selectDisplayedMemos(memoItems, now);
   const shopping = dashboard.shopping.status === 'ready' ? dashboard.shopping.data.slice(0, 8) : [];
   const household = dashboard.householdSummary?.status === 'ready' ? dashboard.householdSummary.data : null;
   const recentPhoto = dashboard.recentPhoto.status === 'ready' ? dashboard.recentPhoto.data : null;
-  const allListsEmpty = memos.length === 0 && shopping.length === 0;
-  const todayIds = new Set(todayTodos.map((todo) => todo.id));
+  const allListsEmpty = memos.totalCount === 0 && shopping.length === 0;
   const overviewAlerts = household ? [...household.alerts].sort((a, b) => Number(b.severity === 'warning') - Number(a.severity === 'warning')).slice(0, 2) : [];
   const timeText = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Hong_Kong', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
   const dateParts = Object.fromEntries(new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Hong_Kong', month: 'numeric', day: 'numeric', weekday: 'short' }).formatToParts(now).map((part) => [part.type, part.value]));
@@ -50,11 +51,19 @@ export function HomePage() {
       </header>
 
       <section className={`${styles.card} ${styles.memos} ${allListsEmpty ? styles.compactMemos : ''}`}>
-        <div className={styles.cardTitle}>家庭备忘</div><span className={styles.count}>{memos.length} 条</span>
-        {memos.length === 0 && <div className={styles.emptyState}>暂无家庭备忘</div>}
-        <div className={styles.memoList}>{memos.map((memo, index) => (
-          <div className={`${styles.memoRow} ${todayIds.has(memo.id) ? styles.memoToday : ''}`} key={memo.id}><i /><strong>{memo.summary}</strong><span>{todayIds.has(memo.id) ? '今日事项' : memo.due ? '已安排' : '备忘'}</span></div>
+        <div className={styles.cardTitle}>家庭备忘</div><span className={styles.count}>{memos.totalCount} 条</span>
+        {memos.totalCount === 0 && <div className={styles.emptyState}>暂无家庭备忘</div>}
+        <div className={styles.memoList}>{memos.visible.map((memo) => (
+          <div className={`${styles.memoRow} ${memo.item.description ? styles.memoRowWithDescription : ''} ${memo.tone === 'today' ? styles.memoToday : memo.tone === 'overdue' ? styles.memoOverdue : memo.tone === 'soon' ? styles.memoSoon : ''}`} key={memo.item.id}>
+            <i />
+            <div className={styles.memoCopy}>
+              <strong>{memo.item.summary}</strong>
+              {memo.item.description && <small>{memo.item.description}</small>}
+            </div>
+            <span>{memo.label}</span>
+          </div>
         ))}</div>
+        {memos.hiddenCount > 0 && <div className={styles.memoMore}>还有 {memos.hiddenCount} 条</div>}
       </section>
 
       <section className={`${styles.card} ${styles.shopping} ${allListsEmpty ? styles.compactShopping : ''}`}>

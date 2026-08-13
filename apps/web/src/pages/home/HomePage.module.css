@@ -21,15 +21,22 @@
 .compactMemos { height: 210px; }
 .memoList { position: absolute; left: 32px; right: 48px; top: 88px; }
 .memoRow { height: 74px; margin-left: 4px; display: flex; align-items: center; border-bottom: 2px solid #e8eae5; }
+.memoRowWithDescription { height: 104px; }
 .memoRow:last-child { border: 0; }
 .memoRow i { width: 14px; height: 14px; border-radius: 50%; background: #a9c8e3; margin-right: 22px; flex: none; }
-.memoRow:first-child i { background: #4d8fd7; }
-.memoRow strong { font-size: 34px; font-weight: 500; line-height: 1.25; max-width: 620px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.memoRow span { margin-left: auto; font-size: 27px; line-height: 1.25; color: #747b74; }
+.memoCopy { min-width: 0; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.memoCopy strong { font-size: 34px; font-weight: 500; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.memoCopy small { margin-top: 5px; color: #747b74; font-size: 26px; font-weight: 450; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.memoRow > span { margin-left: 22px; flex: none; font-size: 27px; line-height: 1.25; color: #747b74; }
 .memoRow.memoToday { margin: 3px 0; padding: 0 16px; border: 0; border-radius: 18px; background: #fff4df; }
 .memoRow.memoToday i { background: #e5a33d; box-shadow: 0 0 0 7px rgba(229,163,61,.13); }
-.memoRow.memoToday strong { font-weight: 700; }
-.memoRow.memoToday span { padding: 8px 15px; border-radius: 17px; background: #f7d99f; color: #966316; font-size: 24px; font-weight: 700; }
+.memoRow.memoToday .memoCopy strong { font-weight: 700; }
+.memoRow.memoToday > span { padding: 8px 15px; border-radius: 17px; background: #f7d99f; color: #966316; font-size: 24px; font-weight: 700; }
+.memoRow.memoSoon i { background: #4d8fd7; }
+.memoRow.memoSoon > span { color: #4d78a7; font-weight: 650; }
+.memoRow.memoOverdue i { background: #db705c; box-shadow: 0 0 0 7px rgba(219,112,92,.12); }
+.memoRow.memoOverdue > span { color: #b44f3d; font-weight: 700; }
+.memoMore { position: absolute; right: 48px; bottom: 22px; color: #747b74; font-size: 23px; font-weight: 600; }
 .shopping { top: 850px; height: 300px; }
 .compactShopping { top: 584px; height: 210px; }
 .shoppingGrid { position: absolute; left: 32px; right: 32px; top: 98px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 56px; row-gap: 16px; }

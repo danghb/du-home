@@ -12,6 +12,8 @@ export interface HomeAssistantTodoItem {
   summary?: string;
   status?: string;
   due?: string;
+  description?: string;
+  completed?: string;
 }
 
 interface ForecastItem {

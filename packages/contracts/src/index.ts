@@ -8,6 +8,7 @@ export const todoDueSchema = z.discriminatedUnion('kind', [
 export const todoItemSchema = z.object({
   id: z.string(),
   summary: z.string(),
+  description: z.string().nullable(),
   due: todoDueSchema.nullable(),
   completed: z.boolean(),
 });

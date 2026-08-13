@@ -29,19 +29,19 @@ export const mockDashboard: DashboardResponse = {
     todayTodos: {
       status: 'ready',
       data: [
-        { id: 'todo-1', summary: '记得拿快递', due: { kind: 'date', value: '2026-08-12' }, completed: false },
-        { id: 'todo-2', summary: '给爸妈打电话', due: { kind: 'datetime', value: '2026-08-12T20:00:00+08:00' }, completed: false },
+        { id: 'todo-1', summary: '记得拿快递', description: null, due: { kind: 'date', value: '2026-08-12' }, completed: false },
+        { id: 'todo-2', summary: '给爸妈打电话', description: '聊聊周末聚餐的安排', due: { kind: 'datetime', value: '2026-08-12T20:00:00+08:00' }, completed: false },
       ],
       updatedAt: generatedAt,
     },
     memos: {
       status: 'ready',
       data: [
-        { id: 'memo-1', summary: '周六全家体检', due: { kind: 'datetime', value: '2026-08-15T15:00:00+08:00' }, completed: false },
-        { id: 'memo-2', summary: '记得拿快递', due: { kind: 'date', value: '2026-08-12' }, completed: false },
-        { id: 'memo-3', summary: '周末换净水器滤芯', due: { kind: 'date', value: '2026-08-16' }, completed: false },
-        { id: 'memo-4', summary: '给爸妈打电话', due: { kind: 'datetime', value: '2026-08-12T20:00:00+08:00' }, completed: false },
-        { id: 'memo-5', summary: '洗衣机里的衣服晾一下', due: null, completed: false },
+        { id: 'memo-1', summary: '周六全家体检', description: '带上身份证和上次的体检报告', due: { kind: 'datetime', value: '2026-08-15T15:00:00+08:00' }, completed: false },
+        { id: 'memo-2', summary: '记得拿快递', description: null, due: { kind: 'date', value: '2026-08-12' }, completed: false },
+        { id: 'memo-3', summary: '周末换净水器滤芯', description: null, due: { kind: 'date', value: '2026-08-16' }, completed: false },
+        { id: 'memo-4', summary: '给爸妈打电话', description: '确认周末几点到家', due: { kind: 'datetime', value: '2026-08-12T20:00:00+08:00' }, completed: false },
+        { id: 'memo-5', summary: '洗衣机里的衣服晾一下', description: null, due: null, completed: false },
       ],
       updatedAt: generatedAt,
     },

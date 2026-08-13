@@ -21,7 +21,7 @@ describe('HomeAssistantHouseholdService', () => {
         state('light.ke_ting_zhu_deng', 'on'),
       ]),
       getTodoItems: vi.fn().mockResolvedValue({
-        'todo.dai_ban_shi_xiang': [{ uid: 'memo', summary: '家庭事项', status: 'needs_action' }],
+        'todo.dai_ban_shi_xiang': [{ uid: 'memo', summary: '家庭事项', description: ' 记得带钥匙\n和门卡 ', status: 'needs_action' }],
         'todo.shopping_list': [{ uid: 'milk', summary: '牛奶', status: 'needs_action' }],
       }),
     };
@@ -33,7 +33,7 @@ describe('HomeAssistantHouseholdService', () => {
     expect(snapshot?.rooms[2]).toMatchObject({ name: '书房', temperature: null, humidity: null });
     expect(snapshot?.activeDeviceCount).toBe(2);
     expect(snapshot?.doorStatus).toBe('已上锁');
-    expect(snapshot?.memos[0]?.summary).toBe('家庭事项');
+    expect(snapshot?.memos[0]).toMatchObject({ summary: '家庭事项', description: '记得带钥匙 和门卡' });
     expect(snapshot?.shopping[0]?.summary).toBe('牛奶');
     service.stop();
   });
