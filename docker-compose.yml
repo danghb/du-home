@@ -1,0 +1,23 @@
+version: "3.7"
+
+services:
+  family-display:
+    build: .
+    container_name: family-display
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      APP_HOST: 0.0.0.0
+      APP_PORT: 3000
+      APP_TIMEZONE: Asia/Hong_Kong
+      APP_DATA_MODE: live
+      PHOTO_ROOT: /app/photos
+      PHOTO_CACHE_ROOT: /app/cache/photos
+      PHOTO_SCAN_INTERVAL_MINUTES: 60
+      HA_BASE_URL: ${HA_BASE_URL}
+      HA_TOKEN: ${HA_TOKEN}
+    volumes:
+      - /volume1/photos:/app/photos:ro
+      - /volume1/family-display/cache:/app/cache
+      - /volume1/family-display/config:/app/config:ro

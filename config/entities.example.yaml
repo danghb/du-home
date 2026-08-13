@@ -1,0 +1,10 @@
+weather: weather.home
+todo:
+  memos: todo.family_memos
+  shopping: todo.shopping_list
+rooms:
+  - id: living
+    name: 客厅
+    temperature: sensor.living_room_temperature
+    humidity: sensor.living_room_humidity
+    device: climate.living_room

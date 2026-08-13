@@ -1,0 +1,31 @@
+.page { position: relative; width: 1080px; height: 1920px; background: #f7f6f1; color: #20231f; }
+.eyebrow { position: absolute; left: 72px; top: 79px; font-size: 27px; font-weight: 600; color: #747b74; }
+.page > h1 { position: absolute; left: 72px; top: 122px; margin: 0; font-size: 62px; line-height: 1.25; }
+.good { position: absolute; right: 96px; top: 112px; width: 174px; height: 44px; line-height: 44px; text-align: center; border-radius: 24px; background: #e9f5ef; color: #35a66e; font-size: 23px; font-weight: 600; }
+.overview { position: absolute; left: 72px; top: 244px; width: 936px; height: 220px; background: white; border-radius: 30px; }
+.overview h2, .scenes h2 { margin: 26px 32px; font-size: 34px; }
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); margin: 8px 32px; }
+.metric span { display: block; color: #747b74; font-size: 23px; }
+.metric i, .room h3 i, .scene i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 12px; }
+.metric:nth-child(1) i, .orange, .scene0, .scene2 { background: #e5a33d; }
+.metric:nth-child(2) i, .scene0 { background: #4d8fd7; }
+.metric:nth-child(3) i, .green, .scene1 { background: #3ba66d; }
+.metric:nth-child(4) i { background: #e56b67; }
+.metric strong { display: block; margin-top: 15px; font-size: 40px; }
+.roomsHeading { position: absolute; left: 72px; top: 500px; width: 936px; display: flex; align-items: center; justify-content: space-between; }
+.roomsHeading h2 { font-size: 35px; margin: 0; }
+.roomsHeading span { font-size: 22px; color: #747b74; }
+.roomGrid { position: absolute; left: 72px; top: 566px; width: 936px; display: grid; grid-template-columns: 1fr 1fr; gap: 30px 48px; }
+.room { position: relative; height: 280px; background: white; border-radius: 30px; padding: 22px 30px; }
+.room h3 { font-size: 33px; margin: 0 0 27px; }
+.roomData { display: grid; grid-template-columns: 1fr 1fr; }
+.roomData div { display: flex; flex-direction: column; }
+.roomData span { font-size: 22px; color: #747b74; margin-bottom: 4px; }
+.roomData strong { font-size: 33px; margin-bottom: 10px; }
+.room b { position: absolute; left: 30px; bottom: 25px; width: 150px; height: 44px; background: #e6f1fb; color: #4d8fd7; border-radius: 24px; text-align: center; line-height: 44px; font-size: 22px; }
+.scenes { position: absolute; left: 72px; top: 1220px; width: 936px; height: 430px; background: white; border-radius: 30px; }
+.scene { height: 92px; margin: 0 36px; display: flex; align-items: center; border-bottom: 2px solid #e8eae5; }
+.scene:last-child { border: 0; }
+.scene strong { font-size: 30px; width: 215px; }
+.scene span { font-size: 23px; color: #747b74; }
+.scene b { margin-left: auto; font-size: 30px; color: #747b74; font-weight: 400; }

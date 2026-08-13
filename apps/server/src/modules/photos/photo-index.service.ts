@@ -1,0 +1,92 @@
+import { createHash } from 'node:crypto';
+import { createReadStream } from 'node:fs';
+import { mkdir, readdir, stat } from 'node:fs/promises';
+import path from 'node:path';
+import * as exifr from 'exifr';
+import sharp from 'sharp';
+import type { Photo } from '@family-display/contracts';
+
+const SUPPORTED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+
+interface IndexedPhoto extends Photo {
+  sourcePath: string;
+  thumbnailPath: string;
+  signature: string;
+}
+
+export class PhotoIndexService {
+  private readonly photos = new Map<string, IndexedPhoto>();
+  private timer: NodeJS.Timeout | null = null;
+
+  constructor(
+    private readonly photoRoot: string,
+    private readonly cacheRoot: string,
+    private readonly intervalMinutes: number,
+  ) {}
+
+  async start() {
+    await this.scan();
+    this.timer = setInterval(() => void this.scan(), this.intervalMinutes * 60_000);
+    this.timer.unref();
+  }
+
+  stop() {
+    if (this.timer) clearInterval(this.timer);
+  }
+
+  list(): Photo[] {
+    return [...this.photos.values()]
+      .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt))
+      .map(({ sourcePath: _sourcePath, thumbnailPath: _thumbnailPath, signature: _signature, ...photo }) => photo);
+  }
+
+  original(id: string) { return this.photos.get(id)?.sourcePath ?? null; }
+  thumbnail(id: string) { return this.photos.get(id)?.thumbnailPath ?? null; }
+  stream(filePath: string) { return createReadStream(filePath); }
+
+  async scan() {
+    await mkdir(this.cacheRoot, { recursive: true });
+    const files = await this.walk(this.photoRoot).catch(() => []);
+    const next = new Map<string, IndexedPhoto>();
+    for (const filePath of files) {
+      const relativePath = path.relative(this.photoRoot, filePath);
+      const fileStat = await stat(filePath);
+      const signature = `${relativePath}:${fileStat.size}:${fileStat.mtimeMs}`;
+      const id = createHash('sha256').update(relativePath).digest('hex').slice(0, 24);
+      const existing = this.photos.get(id);
+      if (existing?.signature === signature) {
+        next.set(id, existing);
+        continue;
+      }
+      const thumbnailPath = path.join(this.cacheRoot, `${id}.webp`);
+      await sharp(filePath).autoOrient().resize({ width: 640, height: 420, fit: 'cover' }).webp({ quality: 80 }).toFile(thumbnailPath);
+      const exif = await exifr.parse(filePath, ['DateTimeOriginal']).catch(() => null) as { DateTimeOriginal?: Date } | null;
+      const capturedDate = exif?.DateTimeOriginal instanceof Date ? exif.DateTimeOriginal : fileStat.mtime;
+      const capturedAt = capturedDate.toISOString();
+      next.set(id, {
+        id,
+        mediaUrl: `/media/original/${id}`,
+        thumbnailUrl: `/media/thumbnail/${id}`,
+        capturedAt,
+        title: `${capturedDate.getMonth() + 1}月${capturedDate.getDate()}日的照片`,
+        sourcePath: filePath,
+        thumbnailPath,
+        signature,
+      });
+    }
+    this.photos.clear();
+    for (const [id, photo] of next) this.photos.set(id, photo);
+  }
+
+  private async walk(directory: string): Promise<string[]> {
+    const entries = await readdir(directory, { withFileTypes: true });
+    const files: string[] = [];
+    for (const entry of entries) {
+      if (entry.isSymbolicLink()) continue;
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) files.push(...await this.walk(entryPath));
+      if (entry.isFile() && SUPPORTED_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) files.push(entryPath);
+    }
+    return files;
+  }
+}

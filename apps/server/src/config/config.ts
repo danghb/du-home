@@ -1,0 +1,37 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { z } from 'zod';
+
+const configSchema = z.object({
+  APP_HOST: z.string().default('0.0.0.0'),
+  APP_PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  APP_TIMEZONE: z.string().default('Asia/Hong_Kong'),
+  APP_DATA_MODE: z.enum(['mock', 'live']).default('mock'),
+  WEB_DIST_ROOT: z.string().optional(),
+  PHOTO_ROOT: z.string().default('./sample-photos'),
+  PHOTO_CACHE_ROOT: z.string().default('./cache/photos'),
+  PHOTO_SCAN_INTERVAL_MINUTES: z.coerce.number().positive().default(60),
+  HA_BASE_URL: z.string().optional(),
+  HA_TOKEN: z.string().optional(),
+});
+
+export type AppConfig = ReturnType<typeof loadConfig>;
+
+export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
+  const parsed = configSchema.parse(env);
+  return {
+    host: parsed.APP_HOST,
+    port: parsed.APP_PORT,
+    timezone: parsed.APP_TIMEZONE,
+    dataMode: parsed.APP_DATA_MODE,
+    webDistRoot: parsed.WEB_DIST_ROOT
+      ? path.resolve(parsed.WEB_DIST_ROOT)
+      : fileURLToPath(new URL('../../../web/dist', import.meta.url)),
+    photoRoot: path.resolve(parsed.PHOTO_ROOT),
+    photoCacheRoot: path.resolve(parsed.PHOTO_CACHE_ROOT),
+    photoScanIntervalMinutes: parsed.PHOTO_SCAN_INTERVAL_MINUTES,
+    homeAssistant: parsed.HA_BASE_URL && parsed.HA_TOKEN
+      ? { baseUrl: parsed.HA_BASE_URL, token: parsed.HA_TOKEN }
+      : null,
+  };
+}
