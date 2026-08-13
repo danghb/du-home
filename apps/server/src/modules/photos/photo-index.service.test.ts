@@ -38,6 +38,25 @@ describe('PhotoIndexService', () => {
     expect(errors.some((filePath) => filePath?.endsWith('damaged.jpg'))).toBe(true);
   });
 
+  it('restores the persisted index before starting a background rescan', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'family-display-photo-'));
+    temporaryDirectories.push(root);
+    const source = path.join(root, 'source');
+    const cache = path.join(root, 'cache');
+    await mkdir(source);
+    await sharp({ create: { width: 120, height: 90, channels: 3, background: '#aaccee' } }).jpeg().toFile(path.join(source, 'memory.jpg'));
+
+    const first = new PhotoIndexService(source, cache, 60);
+    await first.scan();
+    expect(first.list()).toHaveLength(1);
+
+    await rename(source, path.join(root, 'source-offline'));
+    const restored = new PhotoIndexService(source, cache, 60);
+    await restored.start();
+    expect(restored.list()).toEqual(first.list());
+    restored.stop();
+  });
+
   it('retains the last good index when the source directory is temporarily unavailable', async () => {
     const root = await mkdtemp(path.join(tmpdir(), 'family-display-photo-'));
     temporaryDirectories.push(root);

@@ -103,6 +103,6 @@ sudo docker-compose logs --tail=100 family-display
 
 如果 GHCR 镜像设为私有，需要先创建具有 `read:packages` 权限的 GitHub Token，然后执行 `sudo docker login ghcr.io -u danghb`，在密码提示中输入 Token。公开镜像可以匿名拉取。
 
-浏览器打开 `http://NAS局域网地址:3000`。容器提供 `/api/v1/health` 健康检查，日志自动限制为 3 个、每个最多 10 MB。照片服务启动后在后台建立索引；首次生成缩略图期间网页仍可打开，后续每 60 分钟扫描一次并复用未变化照片的缓存。
+浏览器打开 `http://NAS局域网地址:3000`。容器提供 `/api/v1/health` 健康检查，日志自动限制为 3 个、每个最多 10 MB。照片服务启动后在后台建立索引；缩略图与照片元数据索引都保存在 Docker 命名卷中，容器重启时会先恢复已有照片再静默扫描。首次扫描会渐进显示并定期保存进度，后续每 60 分钟扫描一次并复用未变化照片的缓存。
 
 仅当 NAS 能正常访问 Docker Hub 时，才使用 `sudo docker-compose build` 在 NAS 本地构建；日常部署不采用该方式。

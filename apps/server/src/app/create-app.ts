@@ -24,7 +24,7 @@ export async function createApp(config: AppConfig) {
     ? new HomeAssistantHouseholdService(householdClient, config.timezone, config.homeAssistant.dataRefreshSeconds * 1_000,
         (error) => app.log.warn({ error }, 'Home Assistant background household refresh failed'))
     : null;
-  if (config.dataMode === 'live') void photoIndex.start().catch((error) => app.log.warn({ error }, 'Initial photo scan failed'));
+  if (config.dataMode === 'live') await photoIndex.start().catch((error) => app.log.warn({ error }, 'Initial photo index restore failed'));
   if (config.dataMode === 'live' && householdService) await householdService.start();
   app.addHook('onClose', async () => photoIndex.stop());
   app.addHook('onClose', async () => householdService?.stop());
