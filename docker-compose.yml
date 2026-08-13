@@ -6,8 +6,9 @@ services:
     container_name: family-display
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${DISPLAY_PORT:-3000}:3000"
     environment:
+      TZ: Asia/Hong_Kong
       APP_HOST: 0.0.0.0
       APP_PORT: 3000
       APP_TIMEZONE: Asia/Hong_Kong
@@ -17,7 +18,20 @@ services:
       PHOTO_SCAN_INTERVAL_MINUTES: 60
       HA_BASE_URL: ${HA_BASE_URL}
       HA_TOKEN: ${HA_TOKEN}
+      HA_WEATHER_ENTITY: ${HA_WEATHER_ENTITY:-}
+      HA_WEATHER_REFRESH_MINUTES: ${HA_WEATHER_REFRESH_MINUTES:-5}
+      HA_DATA_REFRESH_SECONDS: ${HA_DATA_REFRESH_SECONDS:-30}
     volumes:
-      - /volume1/photos:/app/photos:ro
-      - /volume1/family-display/cache:/app/cache
-      - /volume1/family-display/config:/app/config:ro
+      - "${PHOTO_HOST_PATH:-/volume1/photos}:/app/photos:ro"
+      - "${CACHE_HOST_PATH:-/volume1/family-display/cache}:/app/cache"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/v1/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

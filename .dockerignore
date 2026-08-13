@@ -6,3 +6,4 @@ cache
 output
 .playwright-cli
 *.log
+sample-photos

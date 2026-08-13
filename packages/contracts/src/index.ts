@@ -25,11 +25,18 @@ export const weatherSchema = z.object({
   feelsLike: z.number().optional(),
   humidity: z.number().optional(),
   windSpeed: z.number().optional(),
+  windUnit: z.string().optional(),
+  pressure: z.number().optional(),
+  pressureUnit: z.string().optional(),
+  uvIndex: z.number().optional(),
+  source: z.string().optional(),
   hourly: z.array(z.object({
     time: z.string(),
     condition: z.string(),
     temperature: z.number(),
     precipitation: z.number().optional(),
+    precipitationUnit: z.string().optional(),
+    precipitationProbability: z.number().optional(),
   })).optional(),
   daily: z.array(z.object({
     date: z.string(),
@@ -47,6 +54,14 @@ export const roomStatusSchema = z.object({
   deviceName: z.string().nullable(),
   deviceState: z.string().nullable(),
   summary: z.string(),
+  devices: z.array(z.object({ label: z.string(), state: z.string(), tone: z.enum(['normal', 'active', 'warning']) })).optional(),
+});
+
+export const householdAlertSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  detail: z.string(),
+  severity: z.enum(['info', 'warning']),
 });
 
 export const photoSchema = z.object({
@@ -76,10 +91,20 @@ export const dashboardSchema = z.object({
   memos: sectionSchema(z.array(todoItemSchema)),
   shopping: sectionSchema(z.array(shoppingItemSchema)),
   recentPhoto: sectionSchema(photoSchema),
+  householdSummary: sectionSchema(z.object({
+    doorStatus: z.string(),
+    activeDeviceCount: z.number().int().nonnegative(),
+    alerts: z.array(householdAlertSchema),
+  })).optional(),
 });
 
 export const statusSchema = z.object({
   rooms: sectionSchema(z.array(roomStatusSchema)),
+  overview: sectionSchema(z.object({
+    activeDeviceCount: z.number().int().nonnegative(),
+    doorStatus: z.string(),
+  })).optional(),
+  alerts: sectionSchema(z.array(householdAlertSchema)).optional(),
 });
 
 export const photosSchema = z.object({
@@ -105,6 +130,7 @@ export type TodoItem = z.infer<typeof todoItemSchema>;
 export type ShoppingItem = z.infer<typeof shoppingItemSchema>;
 export type Weather = z.infer<typeof weatherSchema>;
 export type RoomStatus = z.infer<typeof roomStatusSchema>;
+export type HouseholdAlert = z.infer<typeof householdAlertSchema>;
 export type Photo = z.infer<typeof photoSchema>;
 export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;
 export type StatusResponse = z.infer<typeof statusResponseSchema>;

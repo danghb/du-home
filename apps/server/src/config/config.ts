@@ -13,6 +13,12 @@ const configSchema = z.object({
   PHOTO_SCAN_INTERVAL_MINUTES: z.coerce.number().positive().default(60),
   HA_BASE_URL: z.string().optional(),
   HA_TOKEN: z.string().optional(),
+  HA_WEATHER_ENTITY: z.preprocess(
+    (value) => value === '' ? undefined : value,
+    z.string().regex(/^weather\.[a-z0-9_]+$/).optional(),
+  ),
+  HA_WEATHER_REFRESH_MINUTES: z.coerce.number().positive().default(5),
+  HA_DATA_REFRESH_SECONDS: z.coerce.number().positive().default(30),
 });
 
 export type AppConfig = ReturnType<typeof loadConfig>;
@@ -31,7 +37,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     photoCacheRoot: path.resolve(parsed.PHOTO_CACHE_ROOT),
     photoScanIntervalMinutes: parsed.PHOTO_SCAN_INTERVAL_MINUTES,
     homeAssistant: parsed.HA_BASE_URL && parsed.HA_TOKEN
-      ? { baseUrl: parsed.HA_BASE_URL, token: parsed.HA_TOKEN }
+      ? {
+          baseUrl: parsed.HA_BASE_URL,
+          token: parsed.HA_TOKEN,
+          weatherEntityId: parsed.HA_WEATHER_ENTITY ?? null,
+          weatherRefreshMinutes: parsed.HA_WEATHER_REFRESH_MINUTES,
+          dataRefreshSeconds: parsed.HA_DATA_REFRESH_SECONDS,
+        }
       : null,
   };
 }

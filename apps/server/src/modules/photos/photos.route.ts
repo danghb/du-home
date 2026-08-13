@@ -3,6 +3,17 @@ import { photosResponseSchema } from '@family-display/contracts';
 import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config/config.js';
 import type { PhotoIndexService } from './photo-index.service.js';
+import path from 'node:path';
+
+function imageContentType(filePath: string) {
+  switch (path.extname(filePath).toLowerCase()) {
+    case '.jpg':
+    case '.jpeg': return 'image/jpeg';
+    case '.png': return 'image/png';
+    case '.webp': return 'image/webp';
+    default: return 'application/octet-stream';
+  }
+}
 
 export function createPhotosRoutes(config: AppConfig, index: PhotoIndexService): FastifyPluginAsync {
   return async (app) => {
@@ -24,7 +35,7 @@ export function createMediaRoutes(index: PhotoIndexService): FastifyPluginAsync 
     app.get<{ Params: { photoId: string } }>('/original/:photoId', async (request, reply) => {
       const filePath = index.original(request.params.photoId);
       if (!filePath) return reply.code(404).send({ error: 'photo_not_found' });
-      return reply.type('application/octet-stream').send(index.stream(filePath));
+      return reply.type(imageContentType(filePath)).send(index.stream(filePath));
     });
     app.get<{ Params: { photoId: string } }>('/thumbnail/:photoId', async (request, reply) => {
       const filePath = index.thumbnail(request.params.photoId);

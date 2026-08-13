@@ -4,16 +4,6 @@ import { useApiData } from '../../hooks/useApiData';
 import { api } from '../../services/api';
 import styles from './WeatherPage.module.css';
 
-const fallbackHourly = [
-  ['现在', '多云', 26], ['11时', '多云', 27], ['12时', '晴', 28],
-  ['13时', '晴', 29], ['14时', '多云', 29], ['15时', '阵雨', 27],
-] as const;
-
-const fallbackDaily = [
-  ['今天', '多云', 24, 29], ['周四', '阵雨', 23, 28], ['周五', '多云', 24, 30],
-  ['周六', '晴', 25, 31], ['周日', '晴', 25, 32],
-] as const;
-
 function conditionSymbol(condition: string) {
   if (/雷/.test(condition)) return 'ϟ';
   if (/雨/.test(condition)) return '●';
@@ -24,24 +14,28 @@ function conditionSymbol(condition: string) {
 
 export function WeatherPage() {
   const load = useCallback(() => api.dashboard(), []);
-  const state = useApiData(load);
+  const state = useApiData(load, { refreshIntervalMs: 30_000 });
   if (state.status === 'loading') return <div className="page-message">正在读取天气…</div>;
   if (state.status === 'error') return <div className="page-message">{state.message}</div>;
 
   const section = state.data.data.weather;
   if (section.status !== 'ready') return <div className="page-message">天气暂不可用</div>;
   const weather = section.data;
-  const hourly = weather.hourly ?? fallbackHourly.map(([time, condition, temperature]) => ({ time, condition, temperature, precipitation: 0 }));
-  const daily = weather.daily ?? fallbackDaily.map(([date, condition, low, high]) => ({ date, condition, low, high }));
-  const min = Math.min(...daily.map((day) => day.low));
-  const max = Math.max(...daily.map((day) => day.high));
+  const updatedTime = section.updatedAt
+    ? new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(section.updatedAt))
+    : '刚刚';
+  const hourly = weather.hourly ?? [];
+  const daily = weather.daily ?? [];
+  const min = daily.length ? Math.min(...daily.map((day) => day.low)) : 0;
+  const max = daily.length ? Math.max(...daily.map((day) => day.high)) : 1;
+  const hourlySummary = hourly.some((hour) => /雨|雷/.test(hour.condition)) ? '未来几小时有降雨，出门记得带伞。' : '未来几小时天气较为稳定。';
 
   return (
     <section className={styles.page}>
       <div className={styles.skyGlow} />
       <header className={styles.header}>
         <span>家庭天气</span>
-        <time>更新于 09:46</time>
+        <time>更新于 {updatedTime}</time>
       </header>
 
       <section className={styles.hero}>
@@ -55,15 +49,15 @@ export function WeatherPage() {
       </section>
 
       <section className={`${styles.glassCard} ${styles.hourly}`}>
-        <p>未来几小时天气较为稳定，午后可能出现短时阵雨。</p>
+        <p>{hourlySummary}</p>
         <div className={styles.hourList}>{hourly.slice(0, 6).map((hour) => (
           <div className={styles.hour} key={hour.time}>
             <time>{hour.time}</time>
-            <i className={/雨/.test(hour.condition) ? styles.wet : ''}>{conditionSymbol(hour.condition)}</i>
+            <WeatherScene condition={hour.condition} compact />
             <strong>{hour.temperature}°</strong>
-            <small>{hour.precipitation ? `${hour.precipitation}%` : '　'}</small>
+            <small>{hour.precipitationProbability !== undefined ? `${hour.precipitationProbability}%` : hour.precipitation ? `${hour.precipitation}${hour.precipitationUnit ?? 'mm'}` : '　'}</small>
           </div>
-        ))}</div>
+        ))}{hourly.length === 0 && <div className={styles.noForecast}>HA 暂无逐小时预报</div>}</div>
       </section>
 
       <section className={`${styles.glassCard} ${styles.forecast}`}>
@@ -78,14 +72,14 @@ export function WeatherPage() {
             <div className={styles.range}><b style={{ left: `${left}%`, width: `${width}%` }} /></div>
             <span>{day.high}°</span>
           </div>;
-        })}
+        })}{daily.length === 0 && <div className={styles.noDaily}>HA 暂无每日预报</div>}
       </section>
 
       <section className={styles.metrics}>
-        <article className={styles.glassCard}><span>体感温度</span><strong>{weather.feelsLike ?? weather.temperature + 1}°</strong><p>与实际温度接近</p></article>
-        <article className={styles.glassCard}><span>湿度</span><strong>{weather.humidity ?? 68}%</strong><p>体感较为舒适</p></article>
-        <article className={styles.glassCard}><span>风速</span><strong>{weather.windSpeed ?? 11}<small> km/h</small></strong><p>轻柔的东南风</p></article>
-        <article className={styles.glassCard}><span>日落</span><strong>18:52</strong><p>距离日落 7 小时</p></article>
+        {weather.humidity !== undefined && <article className={styles.glassCard}><span>湿度</span><strong>{weather.humidity}%</strong></article>}
+        {weather.windSpeed !== undefined && <article className={styles.glassCard}><span>风速</span><strong>{weather.windSpeed}<small> {weather.windUnit ?? 'km/h'}</small></strong></article>}
+        {weather.pressure !== undefined && <article className={styles.glassCard}><span>气压</span><strong>{weather.pressure}<small> {weather.pressureUnit ?? 'hPa'}</small></strong></article>}
+        {weather.uvIndex !== undefined && <article className={styles.glassCard}><span>紫外线指数</span><strong>{weather.uvIndex}</strong></article>}
       </section>
       <nav className="page-dots" aria-label="页面位置"><i/><i className="active"/><i/><i/></nav>
     </section>

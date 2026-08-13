@@ -1,4 +1,4 @@
-.page { position: relative; width: 1080px; height: 1920px; background: #f7f6f1; color: #20231f; }
+.page { position: relative; width: 1080px; height: 1920px; background: transparent; color: #20231f; }
 .time { position: absolute; left: 72px; top: 52px; font-size: 108px; font-weight: 700; line-height: 1.25; }
 .date { position: absolute; left: 78px; top: 210px; font-size: 34px; font-weight: 600; color: #747b74; }
 .weatherPanel { position: absolute; left: 598px; top: 48px; width: 410px; height: 218px; display: flex; align-items: center; overflow: visible; }
@@ -16,16 +16,9 @@
 .card { position: absolute; left: 72px; width: 936px; background: #fff; border-radius: 30px; }
 .cardTitle { position: absolute; left: 32px; top: 25px; font-size: 34px; font-weight: 700; }
 .count { position: absolute; right: 48px; top: 32px; font-size: 23px; font-weight: 600; color: #747b74; }
-.todos { top: 342px; height: 244px; }
-.todoCount { position: absolute; right: 42px; top: 23px; width: 102px; height: 44px; border-radius: 22px; background: #fdeeee; color: #e56b67; text-align: center; font-size: 23px; font-weight: 600; line-height: 44px; }
-.todoRow { position: relative; margin: 82px 48px 0 36px; height: 76px; display: flex; align-items: flex-start; border-bottom: 2px solid #e8eae5; }
-.todoRow + .todoRow { margin-top: 0; border: 0; }
-.todoRow i { width: 16px; height: 16px; margin: 21px 16px 0 0; border-radius: 50%; flex: none; }
-.red { background: #e56b67; }
-.orange { background: #e5a33d; }
-.todoRow strong { font-size: 30px; line-height: 58px; max-width: 510px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.todoRow span { margin-left: auto; color: #747b74; font-size: 23px; line-height: 58px; }
-.memos { top: 622px; height: 476px; }
+.emptyState { position: absolute; left: 32px; right: 32px; top: 105px; color: #98a19a; font-size: 25px; font-weight: 500; text-align: center; }
+.memos { top: 342px; height: 476px; }
+.compactMemos { height: 210px; }
 .memoList { position: absolute; left: 32px; right: 48px; top: 88px; }
 .memoRow { height: 68px; margin-left: 4px; display: flex; align-items: center; border-bottom: 2px solid #e8eae5; }
 .memoRow:last-child { border: 0; }
@@ -33,12 +26,29 @@
 .memoRow:first-child i { background: #4d8fd7; }
 .memoRow strong { font-size: 28px; font-weight: 500; max-width: 650px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .memoRow span { margin-left: auto; font-size: 23px; color: #747b74; }
-.shopping { top: 1130px; height: 300px; }
+.memoRow.memoToday { margin: 3px 0; padding: 0 16px; border: 0; border-radius: 18px; background: #fff4df; }
+.memoRow.memoToday i { background: #e5a33d; box-shadow: 0 0 0 7px rgba(229,163,61,.13); }
+.memoRow.memoToday strong { font-weight: 700; }
+.memoRow.memoToday span { padding: 7px 13px; border-radius: 16px; background: #f7d99f; color: #966316; font-size: 20px; font-weight: 700; }
+.shopping { top: 850px; height: 300px; }
+.compactShopping { top: 584px; height: 210px; }
 .shoppingGrid { position: absolute; left: 32px; right: 32px; top: 98px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 56px; row-gap: 16px; }
 .shoppingItem { display: flex; align-items: center; font-size: 28px; }
 .shoppingItem i { width: 30px; height: 30px; border: 1px solid #cbd0ca; border-radius: 7px; margin-right: 18px; color: white; text-align: center; font-size: 22px; line-height: 30px; font-style: normal; }
 .shoppingItem i.checked { background: #4d8fd7; border-color: #4d8fd7; }
-.photo { top: 1462px; height: 340px; }
+.photo { top: 1182px; height: 520px; }
+.familyOverview { top: 826px; height: 340px; }
+.overviewMetrics { position: absolute; left: 32px; right: 32px; top: 88px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.overviewMetrics div { display: flex; align-items: center; justify-content: space-between; padding: 17px 20px; border-radius: 18px; background: #f7f7f3; }
+.overviewMetrics span { color: #747b74; font-size: 22px; }
+.overviewMetrics strong { font-size: 27px; }
+.overviewAlerts { position: absolute; left: 36px; right: 36px; top: 170px; display: grid; gap: 12px; }
+.overviewAlerts div { display: grid; grid-template-columns: 12px 190px 1fr; align-items: center; gap: 13px; }
+.overviewAlerts i { width: 10px; height: 10px; border-radius: 50%; background: #6fa985; }
+.overviewAlerts i.alertWarning { background: #e5a33d; }
+.overviewAlerts span { font-size: 24px; font-weight: 650; }
+.overviewAlerts strong { color: #747b74; font-size: 21px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.compactPhoto { top: 1198px; }
 .photoMore { position: absolute; right: 48px; top: 31px; color: #4d8fd7; font-size: 23px; font-weight: 600; }
-.photoArt { position: absolute !important; left: 32px; top: 90px; width: 872px; height: 218px; border-radius: 24px; }
+.photoArt { position: absolute !important; left: 32px; top: 90px; width: 872px; height: 398px; border-radius: 24px; object-fit: cover; }
 .photoCaption { position: absolute; left: 64px; bottom: 37px; color: white; font-size: 27px; z-index: 5; }

@@ -14,7 +14,9 @@ RUN npm run build
 RUN npm prune --omit=dev
 
 FROM node:22-bookworm-slim AS runtime
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    APP_HOST=0.0.0.0 \
+    APP_PORT=3000
 WORKDIR /app
 
 COPY --from=build /app/node_modules ./node_modules
@@ -28,4 +30,5 @@ COPY --from=build /app/packages/test-data/package.json ./packages/test-data/pack
 COPY --from=build /app/packages/test-data/dist ./packages/test-data/dist
 
 EXPOSE 3000
+STOPSIGNAL SIGTERM
 CMD ["node", "apps/server/dist/index.js"]

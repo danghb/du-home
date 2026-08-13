@@ -5,15 +5,36 @@ export type AsyncState<T> =
   | { status: 'ready'; data: T }
   | { status: 'error'; message: string };
 
-export function useApiData<T>(loader: () => Promise<T>): AsyncState<T> {
+interface UseApiDataOptions {
+  refreshIntervalMs?: number;
+}
+
+export function useApiData<T>(loader: () => Promise<T>, options: UseApiDataOptions = {}): AsyncState<T> {
   const [state, setState] = useState<AsyncState<T>>({ status: 'loading' });
+  const refreshIntervalMs = options.refreshIntervalMs ?? 0;
   useEffect(() => {
     let active = true;
-    loader().then(
-      (data) => active && setState({ status: 'ready', data }),
-      (error: unknown) => active && setState({ status: 'error', message: error instanceof Error ? error.message : '数据不可用' }),
-    );
-    return () => { active = false; };
-  }, [loader]);
+    let requestInProgress = false;
+    const refresh = async () => {
+      if (requestInProgress) return;
+      requestInProgress = true;
+      try {
+        const data = await loader();
+        if (active) setState({ status: 'ready', data });
+      } catch (error: unknown) {
+        if (active) setState((previous) => previous.status === 'ready'
+          ? previous
+          : { status: 'error', message: error instanceof Error ? error.message : '数据不可用' });
+      } finally {
+        requestInProgress = false;
+      }
+    };
+    void refresh();
+    const timer = refreshIntervalMs > 0 ? window.setInterval(() => void refresh(), refreshIntervalMs) : null;
+    return () => {
+      active = false;
+      if (timer !== null) window.clearInterval(timer);
+    };
+  }, [loader, refreshIntervalMs]);
   return state;
 }

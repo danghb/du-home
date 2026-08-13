@@ -39,8 +39,68 @@ npm start
 
 打开 http://localhost:3000。`/status` 和 `/photos` 可以直接打开或刷新。
 
+## Home Assistant
+
+Home Assistant 由 NAS 端服务访问，访问令牌不会发送给树莓派浏览器。当前已接入天气、房间温湿度、空调状态、门锁状态、开启设备统计、待办事项和购物清单。
+
+1. 在 Home Assistant 个人资料页创建长期访问令牌。
+2. 将 `.env.example` 复制为不会被 Git 跟踪的 `.env`。
+3. 填写 `HA_TOKEN`，并将 `APP_DATA_MODE` 改为 `live`。
+4. 如果 HA 中只有一个 `weather.*` 实体，`HA_WEATHER_ENTITY` 可以留空；否则填写需要展示的实体 ID。
+
+服务启动时预热天气快照，之后默认每 5 分钟在后台刷新。网页请求只读取内存缓存；HA 暂时不可用时继续保留最后一次成功数据。可通过 `HA_WEATHER_REFRESH_MINUTES` 调整刷新周期。
+
+家居状态与清单默认每 30 秒后台刷新，可通过 `HA_DATA_REFRESH_SECONDS` 调整。使用 `npm run inspect:ha` 可以重新生成去除 Token 与位置坐标的实体/区域/仪表盘清单，输出保存在 `output/ha-inventory/inventory.json`。
+
+公司电脑仍直接运行：
+
+```powershell
+npm run dev
+```
+
+服务启动时会自动读取项目根目录的 `.env`，无需 Docker。Token 不应提交到仓库或写入前端代码。
+
 ## 群晖部署
 
 `Dockerfile` 和 `docker-compose.yml` 只用于 NAS 部署，不参与公司电脑的日常开发。
 
-部署前需按实际情况修改 `docker-compose.yml` 中的照片、缓存和配置目录，并在 NAS 环境中提供 `HA_BASE_URL` 与 `HA_TOKEN`。DSM6 的 Docker、Compose 版本和 CPU 架构需要在实际部署时确认。
+### 1. 部署前确认
+
+在群晖 SSH 终端执行：
+
+```sh
+uname -m
+docker version
+docker-compose version
+```
+
+当前镜像基于 `node:22-bookworm-slim` 并包含 `sharp` 原生模块，因此必须在 NAS 上执行构建，让依赖与 NAS CPU 架构匹配。公司电脑不运行 Docker。
+
+### 2. 配置
+
+把项目复制到 NAS，例如 `/volume1/docker/family-display/app`。在项目目录复制 `.env.example` 为 `.env`，至少填写：
+
+```dotenv
+HA_BASE_URL=https://你的-home-assistant-地址/
+HA_TOKEN=你的长期访问令牌
+HA_WEATHER_ENTITY=weather.forecast_wo_de_jia
+DISPLAY_PORT=3000
+PHOTO_HOST_PATH=/volume1/photos
+CACHE_HOST_PATH=/volume1/docker/family-display/cache
+```
+
+`PHOTO_HOST_PATH` 必须是 NAS 上真实存在的照片目录，容器只读挂载它。`CACHE_HOST_PATH` 必须可写，用于保存 WebP 缩略图。`.env` 已被 Git 和 Docker 构建上下文排除，不要提交或复制到公开位置。
+
+### 3. 构建和启动
+
+```sh
+mkdir -p /volume1/docker/family-display/cache
+cd /volume1/docker/family-display/app
+docker-compose config
+docker-compose build
+docker-compose up -d
+docker-compose ps
+docker-compose logs --tail=100 family-display
+```
+
+浏览器打开 `http://NAS局域网地址:3000`。容器提供 `/api/v1/health` 健康检查，日志自动限制为 3 个、每个最多 10 MB。照片服务启动后在后台建立索引；首次生成缩略图期间网页仍可打开，后续每 60 分钟扫描一次并复用未变化照片的缓存。

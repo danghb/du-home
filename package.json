@@ -13,6 +13,7 @@
     "typecheck": "npm run build -w @family-display/contracts && npm run build -w @family-display/test-data && npm run typecheck -w @family-display/server && npm run typecheck -w @family-display/web",
     "test": "npm run test --workspaces --if-present",
     "build": "npm run typecheck && npm run build -w @family-display/web && npm run build -w @family-display/server",
+    "inspect:ha": "node scripts/inspect-home-assistant.mjs",
     "start": "npm run start -w @family-display/server"
   },
   "devDependencies": {

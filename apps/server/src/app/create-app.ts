@@ -3,20 +3,34 @@ import path from 'node:path';
 import fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import type { AppConfig } from '../config/config.js';
-import { dashboardRoutes } from '../modules/dashboard/dashboard.route.js';
+import { createDashboardRoutes } from '../modules/dashboard/dashboard.route.js';
 import { healthRoutes } from '../modules/health/health.route.js';
 import { createMediaRoutes, createPhotosRoutes } from '../modules/photos/photos.route.js';
 import { PhotoIndexService } from '../modules/photos/photo-index.service.js';
-import { statusRoutes } from '../modules/status/status.route.js';
+import { createStatusRoutes } from '../modules/status/status.route.js';
+import { HomeAssistantClient } from '../integrations/home-assistant/home-assistant.client.js';
+import { HomeAssistantHouseholdService } from '../integrations/home-assistant/home-assistant-household.service.js';
 
 export async function createApp(config: AppConfig) {
   const app = fastify({ logger: true });
-  const photoIndex = new PhotoIndexService(config.photoRoot, config.photoCacheRoot, config.photoScanIntervalMinutes);
-  if (config.dataMode === 'live') await photoIndex.start();
+  const photoIndex = new PhotoIndexService(
+    config.photoRoot,
+    config.photoCacheRoot,
+    config.photoScanIntervalMinutes,
+    (error, filePath) => app.log.warn({ error, filePath }, 'Photo indexing failed'),
+  );
+  const householdClient = config.homeAssistant ? new HomeAssistantClient({ ...config.homeAssistant, timezone: config.timezone }) : null;
+  const householdService = householdClient && config.homeAssistant
+    ? new HomeAssistantHouseholdService(householdClient, config.timezone, config.homeAssistant.dataRefreshSeconds * 1_000,
+        (error) => app.log.warn({ error }, 'Home Assistant background household refresh failed'))
+    : null;
+  if (config.dataMode === 'live') void photoIndex.start().catch((error) => app.log.warn({ error }, 'Initial photo scan failed'));
+  if (config.dataMode === 'live' && householdService) await householdService.start();
   app.addHook('onClose', async () => photoIndex.stop());
+  app.addHook('onClose', async () => householdService?.stop());
 
-  await app.register(dashboardRoutes, { prefix: '/api/v1' });
-  await app.register(statusRoutes, { prefix: '/api/v1' });
+  await app.register(createDashboardRoutes(config, householdService, photoIndex), { prefix: '/api/v1' });
+  await app.register(createStatusRoutes(config, householdService), { prefix: '/api/v1' });
   await app.register(createPhotosRoutes(config, photoIndex), { prefix: '/api/v1' });
   await app.register(healthRoutes, { prefix: '/api/v1' });
   await app.register(createMediaRoutes(photoIndex), { prefix: '/media' });

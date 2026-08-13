@@ -10,11 +10,11 @@ function weatherKind(condition: string): WeatherKind {
   return 'cloudy';
 }
 
-export function WeatherScene({ condition, large = false }: { condition: string; large?: boolean }) {
+export function WeatherScene({ condition, large = false, compact = false }: { condition: string; large?: boolean; compact?: boolean }) {
   const kind = weatherKind(condition);
 
   return (
-    <div className={`${styles.scene} ${styles[kind]} ${large ? styles.large : ''}`} aria-hidden="true">
+    <div className={`${styles.scene} ${styles[kind]} ${large ? styles.large : ''} ${compact ? styles.compact : ''}`} aria-hidden="true">
       <div className={styles.glow} />
       <svg viewBox="0 0 180 140" role="presentation">
         <g className={styles.sun}>
