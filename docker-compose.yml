@@ -2,6 +2,7 @@ version: "3.7"
 
 services:
   family-display:
+    image: ghcr.io/danghb/du-home:latest
     build: .
     container_name: family-display
     restart: unless-stopped

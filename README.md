@@ -70,11 +70,11 @@ npm run dev
 
 ```sh
 uname -m
-docker version
+sudo docker version
 docker-compose version
 ```
 
-当前镜像基于 `node:22-bookworm-slim` 并包含 `sharp` 原生模块，因此必须在 NAS 上执行构建，让依赖与 NAS CPU 架构匹配。公司电脑不运行 Docker。
+当前 NAS 是 `linux/amd64`。项目推送到 GitHub 的 `master` 分支后，GitHub Actions 会构建 amd64 镜像并发布为 `ghcr.io/danghb/du-home:latest`。NAS 优先拉取该成品镜像，不需要访问 Docker Hub，也不在公司电脑运行 Docker。
 
 ### 2. 配置
 
@@ -91,16 +91,20 @@ CACHE_HOST_PATH=/volume1/docker/family-display/cache
 
 `PHOTO_HOST_PATH` 必须是 NAS 上真实存在的照片目录，容器只读挂载它。`CACHE_HOST_PATH` 必须可写，用于保存 WebP 缩略图。`.env` 已被 Git 和 Docker 构建上下文排除，不要提交或复制到公开位置。
 
-### 3. 构建和启动
+### 3. 拉取和启动
 
 ```sh
-mkdir -p /volume1/docker/family-display/cache
+sudo mkdir -p /volume1/docker/family-display/cache
 cd /volume1/docker/family-display/app
-docker-compose config
-docker-compose build
-docker-compose up -d
-docker-compose ps
-docker-compose logs --tail=100 family-display
+sudo docker-compose config
+sudo docker-compose pull
+sudo docker-compose up -d --no-build
+sudo docker-compose ps
+sudo docker-compose logs --tail=100 family-display
 ```
 
+如果 GHCR 镜像设为私有，需要先创建具有 `read:packages` 权限的 GitHub Token，然后执行 `sudo docker login ghcr.io -u danghb`，在密码提示中输入 Token。公开镜像可以匿名拉取。
+
 浏览器打开 `http://NAS局域网地址:3000`。容器提供 `/api/v1/health` 健康检查，日志自动限制为 3 个、每个最多 10 MB。照片服务启动后在后台建立索引；首次生成缩略图期间网页仍可打开，后续每 60 分钟扫描一次并复用未变化照片的缓存。
+
+仅当 NAS 能正常访问 Docker Hub 时，才使用 `sudo docker-compose build` 在 NAS 本地构建；日常部署不采用该方式。
