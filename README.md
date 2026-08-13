@@ -86,15 +86,13 @@ HA_TOKEN=你的长期访问令牌
 HA_WEATHER_ENTITY=weather.forecast_wo_de_jia
 DISPLAY_PORT=3000
 PHOTO_HOST_PATH=/volume1/photos
-CACHE_HOST_PATH=/volume1/docker/family-display/cache
 ```
 
-`PHOTO_HOST_PATH` 必须是 NAS 上真实存在的照片目录，容器只读挂载它。`CACHE_HOST_PATH` 必须可写，用于保存 WebP 缩略图。`.env` 已被 Git 和 Docker 构建上下文排除，不要提交或复制到公开位置。
+`PHOTO_HOST_PATH` 必须是 NAS 上真实存在的照片目录，容器只读挂载它。WebP 缩略图保存在 Docker 自动管理的 `photo-cache` 命名卷中，无需配置缓存目录；重建容器时缓存仍会保留。`.env` 已被 Git 和 Docker 构建上下文排除，不要提交或复制到公开位置。
 
 ### 3. 拉取和启动
 
 ```sh
-sudo mkdir -p /volume1/docker/family-display/cache
 cd /volume1/docker/family-display/app
 sudo docker-compose config
 sudo docker-compose pull
