@@ -12,7 +12,7 @@ function formatDate(value: string, options: Intl.DateTimeFormatOptions) {
 
 export function PhotosPage() {
   const load = useCallback(() => api.photos(), []);
-  const state = useApiData(load, { refreshIntervalMs: 60_000 });
+  const state = useApiData(load, { cacheKey: 'photos', refreshIntervalMs: 60_000 });
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const photos = state.status === 'ready' && state.data.data.photos.status === 'ready'

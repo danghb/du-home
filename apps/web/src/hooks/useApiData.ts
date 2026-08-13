@@ -6,35 +6,87 @@ export type AsyncState<T> =
   | { status: 'error'; message: string };
 
 interface UseApiDataOptions {
+  cacheKey: string;
   refreshIntervalMs?: number;
 }
 
-export function useApiData<T>(loader: () => Promise<T>, options: UseApiDataOptions = {}): AsyncState<T> {
-  const [state, setState] = useState<AsyncState<T>>({ status: 'loading' });
+interface CacheEntry<T> {
+  state: AsyncState<T>;
+  loader: () => Promise<T>;
+  listeners: Set<(state: AsyncState<T>) => void>;
+  inFlight: Promise<void> | null;
+  lastUpdatedAt: number;
+  refreshIntervalMs: number;
+  timer: number | null;
+}
+
+const cache = new Map<string, CacheEntry<unknown>>();
+
+function getCacheEntry<T>(cacheKey: string, loader: () => Promise<T>, refreshIntervalMs: number): CacheEntry<T> {
+  const existing = cache.get(cacheKey) as CacheEntry<T> | undefined;
+  if (existing) {
+    existing.loader = loader;
+    existing.refreshIntervalMs = refreshIntervalMs;
+    return existing;
+  }
+  const entry: CacheEntry<T> = {
+    state: { status: 'loading' },
+    loader,
+    listeners: new Set(),
+    inFlight: null,
+    lastUpdatedAt: 0,
+    refreshIntervalMs,
+    timer: null,
+  };
+  cache.set(cacheKey, entry as CacheEntry<unknown>);
+  return entry;
+}
+
+function publish<T>(entry: CacheEntry<T>, state: AsyncState<T>) {
+  entry.state = state;
+  for (const listener of entry.listeners) listener(state);
+}
+
+function refresh<T>(entry: CacheEntry<T>) {
+  if (entry.inFlight) return entry.inFlight;
+  entry.inFlight = entry.loader()
+    .then((data) => {
+      entry.lastUpdatedAt = Date.now();
+      publish(entry, { status: 'ready', data });
+    })
+    .catch((error: unknown) => {
+      if (entry.state.status !== 'ready') {
+        publish(entry, { status: 'error', message: error instanceof Error ? error.message : '数据不可用' });
+      }
+    })
+    .finally(() => {
+      entry.inFlight = null;
+    });
+  return entry.inFlight;
+}
+
+export function useApiData<T>(loader: () => Promise<T>, options: UseApiDataOptions): AsyncState<T> {
+  const { cacheKey } = options;
   const refreshIntervalMs = options.refreshIntervalMs ?? 0;
+  const entry = getCacheEntry(cacheKey, loader, refreshIntervalMs);
+  const [state, setState] = useState<AsyncState<T>>(() => entry.state);
+
   useEffect(() => {
-    let active = true;
-    let requestInProgress = false;
-    const refresh = async () => {
-      if (requestInProgress) return;
-      requestInProgress = true;
-      try {
-        const data = await loader();
-        if (active) setState({ status: 'ready', data });
-      } catch (error: unknown) {
-        if (active) setState((previous) => previous.status === 'ready'
-          ? previous
-          : { status: 'error', message: error instanceof Error ? error.message : '数据不可用' });
-      } finally {
-        requestInProgress = false;
+    entry.listeners.add(setState);
+    setState(entry.state);
+    const stale = entry.lastUpdatedAt === 0
+      || (refreshIntervalMs > 0 && Date.now() - entry.lastUpdatedAt >= refreshIntervalMs);
+    if (stale) void refresh(entry);
+    if (entry.timer === null && refreshIntervalMs > 0) {
+      entry.timer = window.setInterval(() => void refresh(entry), refreshIntervalMs);
+    }
+    return () => {
+      entry.listeners.delete(setState);
+      if (entry.listeners.size === 0 && entry.timer !== null) {
+        window.clearInterval(entry.timer);
+        entry.timer = null;
       }
     };
-    void refresh();
-    const timer = refreshIntervalMs > 0 ? window.setInterval(() => void refresh(), refreshIntervalMs) : null;
-    return () => {
-      active = false;
-      if (timer !== null) window.clearInterval(timer);
-    };
-  }, [loader, refreshIntervalMs]);
+  }, [entry, refreshIntervalMs]);
   return state;
 }

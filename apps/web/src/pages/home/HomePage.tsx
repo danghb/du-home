@@ -12,7 +12,7 @@ export function HomePage() {
     return () => window.clearInterval(timer);
   }, []);
   const load = useCallback(() => api.dashboard(), []);
-  const state = useApiData(load, { refreshIntervalMs: 30_000 });
+  const state = useApiData(load, { cacheKey: 'dashboard', refreshIntervalMs: 30_000 });
   if (state.status === 'loading') return <div className="page-message">正在读取家庭信息…</div>;
   if (state.status === 'error') return <div className="page-message">{state.message}</div>;
   const dashboard = state.data.data;
