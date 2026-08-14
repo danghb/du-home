@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   movePhotoIndex,
   pickRandomGalleryPhotoIndex,
+  rememberGalleryPhoto,
   resetGalleryPhotoSelection,
+  restoreGalleryPhotoIndex,
   selectRandomPhotoPreviews,
 } from './photo-navigation';
 
@@ -12,17 +14,23 @@ describe('photo navigation', () => {
     expect(movePhotoIndex(0, -1, 6)).toBe(5);
   });
 
-  it('chooses a different random photo when revisiting the gallery', () => {
+  it('restores the current photo when revisiting the gallery', () => {
     resetGalleryPhotoSelection();
     const photos = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
     expect(pickRandomGalleryPhotoIndex(photos, -1, () => 0)).toBe(0);
-    expect(pickRandomGalleryPhotoIndex(photos, -1, () => 0)).toBe(1);
+    expect(restoreGalleryPhotoIndex(photos, () => 0.9)).toBe(0);
+    rememberGalleryPhoto(photos, 2);
+    expect(restoreGalleryPhotoIndex(photos, () => 0)).toBe(2);
   });
 
   it('selects six unique random previews without the current photo', () => {
-    const previews = selectRandomPhotoPreviews(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'], 3, 6, () => 0);
+    resetGalleryPhotoSelection();
+    const photos = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((id) => ({ id }));
+    const previews = selectRandomPhotoPreviews(photos, 3, 6, () => 0);
     expect(previews).toHaveLength(6);
-    expect(new Set(previews).size).toBe(6);
-    expect(previews).not.toContain('d');
+    expect(new Set(previews.map((photo) => photo.id)).size).toBe(6);
+    expect(previews.map((photo) => photo.id)).not.toContain('d');
+    expect(selectRandomPhotoPreviews(photos, 3, 6, () => 0.9).map((photo) => photo.id))
+      .toEqual(previews.map((photo) => photo.id));
   });
 });

@@ -3,7 +3,7 @@ import { api } from '../../services/api';
 import { useApiData } from '../../hooks/useApiData';
 import { PhotoImage } from '../../components/PhotoImage/PhotoImage';
 import { WeatherScene } from '../../components/WeatherScene/WeatherScene';
-import { pickRandomPhotoIndex } from './home-photo-selection';
+import { pickRandomPhotoIndex, restoreHomePhotoIndex } from './home-photo-selection';
 import { selectDisplayedMemos } from './memo-display';
 import styles from './HomePage.module.css';
 
@@ -19,19 +19,18 @@ export function HomePage() {
   const loadConfig = useCallback(() => api.config(), []);
   const state = useApiData(load, { cacheKey: 'dashboard', refreshIntervalMs: 30_000 });
   const weatherState = useApiData(loadWeather, { cacheKey: 'weather', refreshIntervalMs: 5 * 60_000 });
-  const photoState = useApiData(loadPhotos, { cacheKey: 'photos', refreshIntervalMs: 5 * 60_000 });
+  const photoState = useApiData(loadPhotos, { cacheKey: 'photos', refreshIntervalMs: 60 * 60_000 });
   const configState = useApiData(loadConfig, { cacheKey: 'display-config' });
   const photos = photoState.status === 'ready' && photoState.data.data.photos.status === 'ready'
     ? photoState.data.data.photos.data.items
     : [];
-  const [photoIndex, setPhotoIndex] = useState(() => pickRandomPhotoIndex(photos));
+  const photoBatchKey = photos.map((photo) => photo.id).join('|');
+  const [photoIndex, setPhotoIndex] = useState(() => restoreHomePhotoIndex(photos));
   const photoRotationSeconds = configState.status === 'ready' ? configState.data.data.homePhotoRotationSeconds : 20;
   useEffect(() => {
     if (!photos.length) return setPhotoIndex(-1);
-    setPhotoIndex((current) => current >= 0 && current < photos.length
-      ? current
-      : pickRandomPhotoIndex(photos));
-  }, [photos.length]);
+    setPhotoIndex(restoreHomePhotoIndex(photos));
+  }, [photoBatchKey]);
   useEffect(() => {
     if (photos.length < 2) return;
     const timer = window.setInterval(
@@ -39,7 +38,7 @@ export function HomePage() {
       photoRotationSeconds * 1_000,
     );
     return () => window.clearInterval(timer);
-  }, [photoRotationSeconds, photos.length]);
+  }, [photoBatchKey, photoRotationSeconds]);
   if (state.status === 'loading') return <div className="page-message">正在读取家庭信息…</div>;
   if (state.status === 'error') return <div className="page-message">{state.message}</div>;
   const dashboard = state.data.data;

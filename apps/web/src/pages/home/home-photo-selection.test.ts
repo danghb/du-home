@@ -1,17 +1,17 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { pickRandomPhotoIndex, resetHomePhotoSelection } from './home-photo-selection';
+import { pickRandomPhotoIndex, resetHomePhotoSelection, restoreHomePhotoIndex } from './home-photo-selection';
 
 const photos = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
 
 describe('pickRandomPhotoIndex', () => {
   beforeEach(resetHomePhotoSelection);
 
-  it('avoids the photo shown during the previous home visit', () => {
+  it('restores the photo shown during the previous home visit', () => {
     const first = pickRandomPhotoIndex(photos, -1, () => 0);
-    const second = pickRandomPhotoIndex(photos, -1, () => 0);
+    const second = restoreHomePhotoIndex(photos, () => 0.9);
 
     expect(photos[first]?.id).toBe('a');
-    expect(photos[second]?.id).toBe('b');
+    expect(photos[second]?.id).toBe('a');
   });
 
   it('avoids the currently displayed photo during rotation', () => {

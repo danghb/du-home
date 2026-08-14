@@ -1,5 +1,14 @@
 let lastHomePhotoId: string | null = null;
 
+export function restoreHomePhotoIndex(
+  photos: Array<{ id: string }>,
+  random = Math.random,
+) {
+  if (!photos.length) return -1;
+  const rememberedIndex = photos.findIndex((photo) => photo.id === lastHomePhotoId);
+  return rememberedIndex >= 0 ? rememberedIndex : pickRandomPhotoIndex(photos, -1, random);
+}
+
 export function pickRandomPhotoIndex(
   photos: Array<{ id: string }>,
   currentIndex = -1,

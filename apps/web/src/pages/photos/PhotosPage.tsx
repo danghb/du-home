@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../services/api';
 import { useApiData } from '../../hooks/useApiData';
 import { PhotoImage } from '../../components/PhotoImage/PhotoImage';
-import { movePhotoIndex, pickRandomGalleryPhotoIndex, selectRandomPhotoPreviews } from './photo-navigation';
+import { movePhotoIndex, pickRandomGalleryPhotoIndex, rememberGalleryPhoto, restoreGalleryPhotoIndex, selectRandomPhotoPreviews } from './photo-navigation';
 import styles from './PhotosPage.module.css';
 
 const ROTATION_SECONDS = 12;
@@ -13,7 +13,7 @@ function formatDate(value: string, options: Intl.DateTimeFormatOptions) {
 
 export function PhotosPage() {
   const load = useCallback(() => api.photos(), []);
-  const state = useApiData(load, { cacheKey: 'photos', refreshIntervalMs: 5 * 60_000 });
+  const state = useApiData(load, { cacheKey: 'photos', refreshIntervalMs: 60 * 60_000 });
   const [rotationRevision, setRotationRevision] = useState(0);
 
   const photos = state.status === 'ready' && state.data.data.photos.status === 'ready'
@@ -22,7 +22,8 @@ export function PhotosPage() {
   const photoTotal = state.status === 'ready' && state.data.data.photos.status === 'ready'
     ? state.data.data.photos.data.total
     : 0;
-  const [currentIndex, setCurrentIndex] = useState(() => pickRandomGalleryPhotoIndex(photos));
+  const photoBatchKey = photos.map((photo) => photo.id).join('|');
+  const [currentIndex, setCurrentIndex] = useState(() => restoreGalleryPhotoIndex(photos));
   useEffect(() => {
     if (photos.length < 2) return;
     const timer = window.setInterval(
@@ -30,22 +31,24 @@ export function PhotosPage() {
       ROTATION_SECONDS * 1_000,
     );
     return () => window.clearInterval(timer);
-  }, [photos.length, rotationRevision]);
-  useEffect(() => setCurrentIndex((index) => index >= 0 && index < photos.length
-    ? index
-    : pickRandomGalleryPhotoIndex(photos)), [photos.length]);
+  }, [photoBatchKey, rotationRevision]);
+  useEffect(() => setCurrentIndex(restoreGalleryPhotoIndex(photos)), [photoBatchKey]);
   useEffect(() => {
     if (photos.length < 2) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.repeat || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
       event.preventDefault();
       const offset = event.key === 'ArrowUp' ? -1 : 1;
-      setCurrentIndex((index) => movePhotoIndex(index, offset, photos.length));
+      setCurrentIndex((index) => {
+        const nextIndex = movePhotoIndex(index, offset, photos.length);
+        rememberGalleryPhoto(photos, nextIndex);
+        return nextIndex;
+      });
       setRotationRevision((revision) => revision + 1);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [photos.length]);
+  }, [photoBatchKey]);
 
   const current = photos[currentIndex] ?? null;
   const memories = useMemo(() => selectRandomPhotoPreviews(photos, currentIndex), [photos, currentIndex]);
