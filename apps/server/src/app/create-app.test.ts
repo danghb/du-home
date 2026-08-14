@@ -10,4 +10,13 @@ describe('API', () => {
     expect(response.json().data.todayTodos.status).toBe('ready');
     await app.close();
   });
+
+  it('returns a bounded photo batch with the full library total', async () => {
+    const app = await createApp(loadConfig({ APP_DATA_MODE: 'mock' }));
+    const response = await app.inject({ method: 'GET', url: '/api/v1/photos?limit=64' });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data.photos.data.items).toHaveLength(8);
+    expect(response.json().data.photos.data.total).toBe(8);
+    await app.close();
+  });
 });

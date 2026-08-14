@@ -69,7 +69,26 @@ export class PhotoIndexService {
   list(): Photo[] {
     return [...this.photos.values()]
       .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt))
-      .map(({ sourcePath: _sourcePath, thumbnailPath: _thumbnailPath, displayPath: _displayPath, signature: _signature, ...photo }) => photo);
+      .map((photo) => this.toPublicPhoto(photo));
+  }
+
+  count() { return this.photos.size; }
+
+  sample(limit: number, random = Math.random): Photo[] {
+    const sampleSize = Math.min(Math.max(0, Math.floor(limit)), this.photos.size);
+    if (!sampleSize) return [];
+    const selected: IndexedPhoto[] = [];
+    let seen = 0;
+    for (const photo of this.photos.values()) {
+      seen += 1;
+      if (selected.length < sampleSize) {
+        selected.push(photo);
+        continue;
+      }
+      const replacement = Math.floor(random() * seen);
+      if (replacement < sampleSize) selected[replacement] = photo;
+    }
+    return selected.map((photo) => this.toPublicPhoto(photo));
   }
 
   thumbnail(id: string) { return this.photos.get(id)?.thumbnailPath ?? null; }
@@ -231,6 +250,11 @@ export class PhotoIndexService {
       this.onError(error, photo.sourcePath);
       return null;
     }
+  }
+
+  private toPublicPhoto(photo: IndexedPhoto): Photo {
+    const { sourcePath: _sourcePath, thumbnailPath: _thumbnailPath, displayPath: _displayPath, signature: _signature, ...publicPhoto } = photo;
+    return publicPhoto;
   }
 
   private async persist() {

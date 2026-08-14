@@ -31,6 +31,8 @@ describe('PhotoIndexService', () => {
 
     await service.scan();
     expect(service.list()).toHaveLength(1);
+    expect(service.count()).toBe(1);
+    expect(service.sample(64)).toEqual(service.list());
     const thumbnailPath = service.thumbnail(service.list()[0]!.id)!;
     const firstThumbnailTime = (await stat(thumbnailPath)).mtimeMs;
     const displayPath = await service.display(service.list()[0]!.id);
@@ -85,5 +87,23 @@ describe('PhotoIndexService', () => {
     await rename(source, path.join(root, 'source-offline'));
     await service.scan();
     expect(service.list()).toHaveLength(1);
+  });
+
+  it('returns a bounded random sample without duplicate metadata', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'family-display-photo-'));
+    temporaryDirectories.push(root);
+    const source = path.join(root, 'source');
+    const cache = path.join(root, 'cache');
+    await mkdir(source);
+    await Promise.all(Array.from({ length: 10 }, (_, index) => sharp({
+      create: { width: 20, height: 20, channels: 3, background: `rgb(${index * 20}, 100, 140)` },
+    }).jpeg().toFile(path.join(source, `${index}.jpg`))));
+    const service = new PhotoIndexService(source, cache, 60);
+
+    await service.scan();
+    const sample = service.sample(4, () => 0.5);
+    expect(service.count()).toBe(10);
+    expect(sample).toHaveLength(4);
+    expect(new Set(sample.map((photo) => photo.id)).size).toBe(4);
   });
 });

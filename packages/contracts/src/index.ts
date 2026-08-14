@@ -109,7 +109,10 @@ export const statusSchema = z.object({
 });
 
 export const photosSchema = z.object({
-  photos: sectionSchema(z.array(photoSchema)),
+  photos: sectionSchema(z.object({
+    items: z.array(photoSchema),
+    total: z.number().int().nonnegative(),
+  })),
 });
 
 export const displayConfigSchema = z.object({

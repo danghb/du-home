@@ -13,12 +13,15 @@ function formatDate(value: string, options: Intl.DateTimeFormatOptions) {
 
 export function PhotosPage() {
   const load = useCallback(() => api.photos(), []);
-  const state = useApiData(load, { cacheKey: 'photos', refreshIntervalMs: 60_000 });
+  const state = useApiData(load, { cacheKey: 'photos', refreshIntervalMs: 5 * 60_000 });
   const [rotationRevision, setRotationRevision] = useState(0);
 
   const photos = state.status === 'ready' && state.data.data.photos.status === 'ready'
-    ? state.data.data.photos.data
+    ? state.data.data.photos.data.items
     : [];
+  const photoTotal = state.status === 'ready' && state.data.data.photos.status === 'ready'
+    ? state.data.data.photos.data.total
+    : 0;
   const [currentIndex, setCurrentIndex] = useState(() => pickRandomGalleryPhotoIndex(photos));
   useEffect(() => {
     if (photos.length < 2) return;
@@ -62,7 +65,7 @@ export function PhotosPage() {
         <span>{photos.length > 1 ? `↑ 上一张　↓ 下一张　·　${ROTATION_SECONDS} 秒后自动切换` : '将照片复制到 sample-photos 后重启服务'}</span>
       </div>
     </section>
-    <header className={styles.memories}><h2>随机回忆</h2><span>{photos.length} 张</span></header>
+    <header className={styles.memories}><h2>随机回忆</h2><span>{photoTotal} 张</span></header>
     <div className={styles.grid}>{memories.map((photo, index) => <article key={photo.id}>
       <PhotoImage photo={photo} variant={index % 3} />
       <b>{formatDate(photo.capturedAt, { month: 'numeric', day: 'numeric' })}</b>

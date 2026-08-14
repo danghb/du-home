@@ -88,6 +88,6 @@ const mockPhotos = Array.from({ length: 8 }, (_, index) => ({
 }));
 
 export const mockPhotoResponse: PhotosResponse = {
-  data: { photos: { status: 'ready', data: mockPhotos, updatedAt: generatedAt } },
+  data: { photos: { status: 'ready', data: { items: mockPhotos, total: mockPhotos.length }, updatedAt: generatedAt } },
   meta: { generatedAt, mode: 'mock' },
 };

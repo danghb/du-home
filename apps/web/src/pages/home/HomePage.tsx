@@ -17,10 +17,10 @@ export function HomePage() {
   const loadPhotos = useCallback(() => api.photos(), []);
   const loadConfig = useCallback(() => api.config(), []);
   const state = useApiData(load, { cacheKey: 'dashboard', refreshIntervalMs: 30_000 });
-  const photoState = useApiData(loadPhotos, { cacheKey: 'photos', refreshIntervalMs: 60_000 });
+  const photoState = useApiData(loadPhotos, { cacheKey: 'photos', refreshIntervalMs: 5 * 60_000 });
   const configState = useApiData(loadConfig, { cacheKey: 'display-config' });
   const photos = photoState.status === 'ready' && photoState.data.data.photos.status === 'ready'
-    ? photoState.data.data.photos.data
+    ? photoState.data.data.photos.data.items
     : [];
   const [photoIndex, setPhotoIndex] = useState(() => pickRandomPhotoIndex(photos));
   const photoRotationSeconds = configState.status === 'ready' ? configState.data.data.homePhotoRotationSeconds : 20;

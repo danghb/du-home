@@ -110,6 +110,6 @@ sudo docker-compose logs --tail=100 family-display
 
 显示方向由 URL 控制，不需要切换树莓派的系统显示方向：默认地址为竖屏；`?orientation=landscape` 将整张画布顺时针旋转为横屏；`?orientation=landscape-reverse` 反向旋转。页面切换时方向参数会保留。
 
-首页照片默认每 20 秒随机轮换且不会连续重复；家庭相册首次进入、自动轮换和下方六张回忆也使用随机选择，并避免主图连续重复。页面自动轮换默认开启，`PAGE_ROTATION_SCHEDULE` 使用“页面 ID:停留秒数”的格式；当前页面 ID 为 `home`、`weather`、`status`、`photos`。设置 `PAGE_ROTATION_ENABLED=false` 可关闭自动轮换。修改 `.env` 后执行 `sudo docker-compose up -d --no-build` 重建容器使配置生效。
+照片接口不会再把完整索引发送给前端，而是每次从后端随机抽取最多 64 张并同时返回图库总数；前端共享这一批数据并每 5 分钟静默换一批。首页照片默认每 20 秒随机轮换且不会连续重复；家庭相册首次进入、自动轮换和下方六张回忆也使用随机选择，并避免主图连续重复。页面自动轮换默认开启，`PAGE_ROTATION_SCHEDULE` 使用“页面 ID:停留秒数”的格式；当前页面 ID 为 `home`、`weather`、`status`、`photos`。设置 `PAGE_ROTATION_ENABLED=false` 可关闭自动轮换。修改 `.env` 后执行 `sudo docker-compose up -d --no-build` 重建容器使配置生效。
 
 仅当 NAS 能正常访问 Docker Hub 时，才使用 `sudo docker-compose build` 在 NAS 本地构建；日常部署不采用该方式。

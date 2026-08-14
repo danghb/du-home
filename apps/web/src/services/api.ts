@@ -18,6 +18,6 @@ async function fetchJson<T>(url: string, parse: (input: unknown) => T): Promise<
 export const api = {
   dashboard: (): Promise<DashboardResponse> => fetchJson('/api/v1/dashboard', dashboardResponseSchema.parse),
   status: (): Promise<StatusResponse> => fetchJson('/api/v1/status', statusResponseSchema.parse),
-  photos: (): Promise<PhotosResponse> => fetchJson('/api/v1/photos', photosResponseSchema.parse),
+  photos: (): Promise<PhotosResponse> => fetchJson('/api/v1/photos?limit=64', photosResponseSchema.parse),
   config: (): Promise<DisplayConfigResponse> => fetchJson('/api/v1/config', displayConfigResponseSchema.parse),
 };
