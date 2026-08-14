@@ -3,12 +3,12 @@ import { api } from '../../services/api';
 import { useApiData } from '../../hooks/useApiData';
 import { PhotoImage } from '../../components/PhotoImage/PhotoImage';
 import { WeatherScene } from '../../components/WeatherScene/WeatherScene';
+import { pickRandomPhotoIndex } from './home-photo-selection';
 import { selectDisplayedMemos } from './memo-display';
 import styles from './HomePage.module.css';
 
 export function HomePage() {
   const [now, setNow] = useState(() => new Date());
-  const [photoIndex, setPhotoIndex] = useState(-1);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000);
     return () => window.clearInterval(timer);
@@ -22,19 +22,20 @@ export function HomePage() {
   const photos = photoState.status === 'ready' && photoState.data.data.photos.status === 'ready'
     ? photoState.data.data.photos.data
     : [];
+  const [photoIndex, setPhotoIndex] = useState(() => pickRandomPhotoIndex(photos));
   const photoRotationSeconds = configState.status === 'ready' ? configState.data.data.homePhotoRotationSeconds : 20;
   useEffect(() => {
     if (!photos.length) return setPhotoIndex(-1);
     setPhotoIndex((current) => current >= 0 && current < photos.length
       ? current
-      : Math.floor(Math.random() * photos.length));
+      : pickRandomPhotoIndex(photos));
   }, [photos.length]);
   useEffect(() => {
     if (photos.length < 2) return;
-    const timer = window.setInterval(() => setPhotoIndex((current) => {
-      const nextOffset = 1 + Math.floor(Math.random() * (photos.length - 1));
-      return ((current < 0 ? 0 : current) + nextOffset) % photos.length;
-    }), photoRotationSeconds * 1_000);
+    const timer = window.setInterval(
+      () => setPhotoIndex((current) => pickRandomPhotoIndex(photos, current)),
+      photoRotationSeconds * 1_000,
+    );
     return () => window.clearInterval(timer);
   }, [photoRotationSeconds, photos.length]);
   if (state.status === 'loading') return <div className="page-message">正在读取家庭信息…</div>;
