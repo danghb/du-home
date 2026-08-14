@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-
 import { DisplayViewport } from '../components/DisplayViewport/DisplayViewport';
 import { WeatherAtmosphere } from '../components/WeatherAtmosphere/WeatherAtmosphere';
 import { usePageNavigation } from '../hooks/usePageNavigation';
+import { usePageDataScheduler } from '../hooks/usePageDataScheduler';
 import { useApiData } from '../hooks/useApiData';
 import { api } from '../services/api';
 import { displayPages } from './pages';
@@ -12,6 +13,9 @@ export function App() {
   const location = useLocation();
   const loadConfig = useCallback(() => api.config(), []);
   const configState = useApiData(loadConfig, { cacheKey: 'display-config' });
+  const enabledPages = displayPages.filter((page) => page.enabled);
+  const currentPageId = enabledPages.find((page) => page.path === location.pathname)?.id ?? enabledPages[0]?.id ?? 'home';
+  usePageDataScheduler(currentPageId, enabledPages);
   const pageRotation = configState.status === 'ready'
     ? configState.data.data.pageRotation
     : { enabled: false, durationsSeconds: {} };
@@ -22,7 +26,7 @@ export function App() {
       <div className="weather-shell">
         <WeatherAtmosphere />
         <div className="route-layer"><Routes>
-          {displayPages.filter((page) => page.enabled).map((page) => (
+          {enabledPages.map((page) => (
             <Route key={page.id} path={page.path} element={<page.component />} />
           ))}
           <Route path="*" element={<Navigate to={{ pathname: '/', search: location.search }} replace />} />

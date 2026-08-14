@@ -10,6 +10,11 @@ interface UseApiDataOptions {
   refreshIntervalMs?: number;
 }
 
+interface RefreshApiDataOptions {
+  cacheKey: string;
+  maxAgeMs?: number;
+}
+
 interface CacheEntry<T> {
   state: AsyncState<T>;
   loader: () => Promise<T>;
@@ -63,6 +68,20 @@ function refresh<T>(entry: CacheEntry<T>) {
       entry.inFlight = null;
     });
   return entry.inFlight;
+}
+
+export function refreshApiData<T>(loader: () => Promise<T>, options: RefreshApiDataOptions) {
+  const entry = getCacheEntry(options.cacheKey, loader, 0);
+  const maxAgeMs = options.maxAgeMs ?? 0;
+  const fresh = entry.lastUpdatedAt > 0
+    && (maxAgeMs === 0 || Date.now() - entry.lastUpdatedAt < maxAgeMs);
+  if (fresh) return Promise.resolve();
+  return refresh(entry);
+}
+
+export function apiDataAgeMs(cacheKey: string, now = Date.now()) {
+  const entry = cache.get(cacheKey);
+  return entry?.lastUpdatedAt ? Math.max(0, now - entry.lastUpdatedAt) : null;
 }
 
 export function useApiData<T>(loader: () => Promise<T>, options: UseApiDataOptions): AsyncState<T> {

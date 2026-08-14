@@ -15,7 +15,7 @@ function DeviceIcon({ label }: { label: string }) {
 
 export function StatusPage() {
   const load = useCallback(() => api.status(), []);
-  const state = useApiData(load, { cacheKey: 'status', refreshIntervalMs: 30_000 });
+  const state = useApiData(load, { cacheKey: 'status' });
   if (state.status !== 'ready') return <div className="page-message">{state.status === 'loading' ? '正在读取家庭状态…' : state.message}</div>;
   const rooms = state.data.data.rooms.status === 'ready' ? state.data.data.rooms.data : [];
   const temperatures = rooms.map((room) => room.temperature).filter((value): value is number => value !== null);

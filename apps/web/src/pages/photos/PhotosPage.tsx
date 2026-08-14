@@ -13,7 +13,7 @@ function formatDate(value: string, options: Intl.DateTimeFormatOptions) {
 
 export function PhotosPage() {
   const load = useCallback(() => api.photos(), []);
-  const state = useApiData(load, { cacheKey: 'photos', refreshIntervalMs: 60 * 60_000 });
+  const state = useApiData(load, { cacheKey: 'photos' });
   const [rotationRevision, setRotationRevision] = useState(0);
 
   const photos = state.status === 'ready' && state.data.data.photos.status === 'ready'

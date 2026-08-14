@@ -17,9 +17,9 @@ export function HomePage() {
   const loadWeather = useCallback(() => api.weather(), []);
   const loadPhotos = useCallback(() => api.photos(), []);
   const loadConfig = useCallback(() => api.config(), []);
-  const state = useApiData(load, { cacheKey: 'dashboard', refreshIntervalMs: 30_000 });
-  const weatherState = useApiData(loadWeather, { cacheKey: 'weather', refreshIntervalMs: 5 * 60_000 });
-  const photoState = useApiData(loadPhotos, { cacheKey: 'photos', refreshIntervalMs: 60 * 60_000 });
+  const state = useApiData(load, { cacheKey: 'dashboard' });
+  const weatherState = useApiData(loadWeather, { cacheKey: 'weather' });
+  const photoState = useApiData(loadPhotos, { cacheKey: 'photos' });
   const configState = useApiData(loadConfig, { cacheKey: 'display-config' });
   const photos = photoState.status === 'ready' && photoState.data.data.photos.status === 'ready'
     ? photoState.data.data.photos.data.items
