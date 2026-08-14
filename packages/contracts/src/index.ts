@@ -23,14 +23,12 @@ export const weatherSchema = z.object({
   condition: z.string(),
   temperature: z.number(),
   unit: z.string(),
-  feelsLike: z.number().optional(),
   humidity: z.number().optional(),
   windSpeed: z.number().optional(),
   windUnit: z.string().optional(),
   pressure: z.number().optional(),
   pressureUnit: z.string().optional(),
   uvIndex: z.number().optional(),
-  source: z.string().optional(),
   hourly: z.array(z.object({
     time: z.string(),
     condition: z.string(),
@@ -52,8 +50,6 @@ export const roomStatusSchema = z.object({
   name: z.string(),
   temperature: z.number().nullable(),
   humidity: z.number().nullable(),
-  deviceName: z.string().nullable(),
-  deviceState: z.string().nullable(),
   summary: z.string(),
   devices: z.array(z.object({ label: z.string(), state: z.string(), tone: z.enum(['normal', 'active', 'warning']) })).optional(),
 });
@@ -87,11 +83,9 @@ export function sectionSchema<T extends z.ZodType>(dataSchema: T) {
 }
 
 export const dashboardSchema = z.object({
-  weather: sectionSchema(weatherSchema),
-  todayTodos: sectionSchema(z.array(todoItemSchema)),
+  todayTodoCount: sectionSchema(z.number().int().nonnegative()),
   memos: sectionSchema(z.array(todoItemSchema)),
   shopping: sectionSchema(z.array(shoppingItemSchema)),
-  recentPhoto: sectionSchema(photoSchema),
   householdSummary: sectionSchema(z.object({
     doorStatus: z.string(),
     activeDeviceCount: z.number().int().nonnegative(),
@@ -105,7 +99,10 @@ export const statusSchema = z.object({
     activeDeviceCount: z.number().int().nonnegative(),
     doorStatus: z.string(),
   })).optional(),
-  alerts: sectionSchema(z.array(householdAlertSchema)).optional(),
+});
+
+export const weatherResponseDataSchema = z.object({
+  weather: sectionSchema(weatherSchema),
 });
 
 export const photosSchema = z.object({
@@ -134,6 +131,7 @@ export function apiEnvelopeSchema<T extends z.ZodType>(dataSchema: T) {
 }
 
 export const dashboardResponseSchema = apiEnvelopeSchema(dashboardSchema);
+export const weatherResponseSchema = apiEnvelopeSchema(weatherResponseDataSchema);
 export const statusResponseSchema = apiEnvelopeSchema(statusSchema);
 export const photosResponseSchema = apiEnvelopeSchema(photosSchema);
 export const displayConfigResponseSchema = apiEnvelopeSchema(displayConfigSchema);
@@ -146,6 +144,7 @@ export type RoomStatus = z.infer<typeof roomStatusSchema>;
 export type HouseholdAlert = z.infer<typeof householdAlertSchema>;
 export type Photo = z.infer<typeof photoSchema>;
 export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;
+export type WeatherResponse = z.infer<typeof weatherResponseSchema>;
 export type StatusResponse = z.infer<typeof statusResponseSchema>;
 export type PhotosResponse = z.infer<typeof photosResponseSchema>;
 export type DisplayConfigResponse = z.infer<typeof displayConfigResponseSchema>;

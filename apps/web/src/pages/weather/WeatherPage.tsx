@@ -13,8 +13,8 @@ function conditionSymbol(condition: string) {
 }
 
 export function WeatherPage() {
-  const load = useCallback(() => api.dashboard(), []);
-  const state = useApiData(load, { cacheKey: 'dashboard', refreshIntervalMs: 30_000 });
+  const load = useCallback(() => api.weather(), []);
+  const state = useApiData(load, { cacheKey: 'weather', refreshIntervalMs: 5 * 60_000 });
   if (state.status === 'loading') return <div className="page-message">正在读取天气…</div>;
   if (state.status === 'error') return <div className="page-message">{state.message}</div>;
 

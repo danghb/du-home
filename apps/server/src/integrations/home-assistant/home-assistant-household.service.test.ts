@@ -29,7 +29,8 @@ describe('HomeAssistantHouseholdService', () => {
     await service.start();
     const snapshot = service.getSnapshot();
 
-    expect(snapshot?.rooms[0]).toMatchObject({ name: '客厅', temperature: 28.9, humidity: 75, deviceState: '制冷' });
+    expect(snapshot?.rooms[0]).toMatchObject({ name: '客厅', temperature: 28.9, humidity: 75 });
+    expect(snapshot?.rooms[0]?.devices?.[0]).toMatchObject({ label: '空调', state: '制冷', tone: 'active' });
     expect(snapshot?.rooms[2]).toMatchObject({ name: '书房', temperature: null, humidity: null });
     expect(snapshot?.activeDeviceCount).toBe(2);
     expect(snapshot?.doorStatus).toBe('已上锁');

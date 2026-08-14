@@ -22,7 +22,7 @@ export function StatusPage() {
   const humidities = rooms.map((room) => room.humidity).filter((value): value is number => value !== null);
   const overviewTemperature = temperatures.length ? temperatures.reduce((sum, value) => sum + value, 0) / temperatures.length : 0;
   const overviewHumidity = humidities.length ? humidities.reduce((sum, value) => sum + value, 0) / humidities.length : 0;
-  const enabled = rooms.filter((room) => room.deviceState === '开启').length;
+  const enabled = rooms.flatMap((room) => room.devices ?? []).filter((device) => device.tone === 'active').length;
   const overview = state.data.data.overview?.status === 'ready' ? state.data.data.overview.data : null;
   const activeDeviceCount = overview?.activeDeviceCount ?? enabled;
   const doorStatus = overview?.doorStatus ?? '未知';

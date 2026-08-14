@@ -1,7 +1,7 @@
-import type { DashboardResponse } from '@family-display/contracts';
+import type { WeatherResponse } from '@family-display/contracts';
 import type { HomeAssistantClient } from './home-assistant.client.js';
 
-type WeatherSection = DashboardResponse['data']['weather'];
+type WeatherSection = WeatherResponse['data']['weather'];
 type WeatherSource = Pick<HomeAssistantClient, 'getWeather'>;
 
 export class HomeAssistantWeatherService {

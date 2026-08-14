@@ -7,7 +7,17 @@ describe('API', () => {
     const app = await createApp(loadConfig({ APP_DATA_MODE: 'mock' }));
     const response = await app.inject({ method: 'GET', url: '/api/v1/dashboard' });
     expect(response.statusCode).toBe(200);
-    expect(response.json().data.todayTodos.status).toBe('ready');
+    expect(response.json().data.todayTodoCount).toMatchObject({ status: 'ready', data: 2 });
+    await app.close();
+  });
+
+  it('returns weather independently from home dashboard data', async () => {
+    const app = await createApp(loadConfig({ APP_DATA_MODE: 'mock' }));
+    const response = await app.inject({ method: 'GET', url: '/api/v1/weather' });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data.weather.data).toMatchObject({ condition: '多云', temperature: 26 });
+    expect(response.json().data.weather.data.hourly).toHaveLength(6);
+    expect(response.json().data.weather.data.daily).toHaveLength(5);
     await app.close();
   });
 

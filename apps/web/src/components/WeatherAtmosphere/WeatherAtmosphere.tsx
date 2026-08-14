@@ -11,8 +11,8 @@ function weatherKind(condition: string) {
 }
 
 export function WeatherAtmosphere() {
-  const load = useCallback(() => api.dashboard(), []);
-  const state = useApiData(load, { cacheKey: 'dashboard', refreshIntervalMs: 30_000 });
+  const load = useCallback(() => api.weather(), []);
+  const state = useApiData(load, { cacheKey: 'weather', refreshIntervalMs: 5 * 60_000 });
   const condition = state.status === 'ready' && state.data.data.weather.status === 'ready' ? state.data.data.weather.data.condition : '多云';
   const kind = weatherKind(condition);
   return <div className={`${styles.atmosphere} ${styles[kind]}`} aria-hidden="true">

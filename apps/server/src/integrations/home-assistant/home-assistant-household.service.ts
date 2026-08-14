@@ -125,14 +125,13 @@ export class HomeAssistantHouseholdService {
         }
         return {
           id: mapping.id, name: mapping.name, temperature, humidity,
-          deviceName: '空调', deviceState: climateLabel(climate?.state),
           summary: temperature === null ? '暂无环境传感器' : comfortable ? '环境舒适' : '请留意环境',
           devices,
         };
       });
       rooms.push(
         {
-          id: 'balcony', name: '阳台', temperature: null, humidity: null, deviceName: null, deviceState: null,
+          id: 'balcony', name: '阳台', temperature: null, humidity: null,
           summary: '设备状态',
           devices: [
             { label: '晾衣架', state: stateLabel(byId.get('cover.xiaomi_cn_2175535786_0003_s_2_airer')?.state), tone: byId.get('cover.xiaomi_cn_2175535786_0003_s_2_airer')?.state === 'unavailable' ? 'warning' : 'normal' },

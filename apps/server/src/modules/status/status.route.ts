@@ -15,13 +15,11 @@ export function createStatusRoutes(config: AppConfig, householdService: HomeAssi
         return statusResponseSchema.parse({ data: {
           rooms: { status: 'unavailable', data: null, updatedAt: null, reason },
           overview: { status: 'unavailable', data: null, updatedAt: null, reason },
-          alerts: { status: 'unavailable', data: null, updatedAt: null, reason },
         }, meta: { generatedAt, mode: 'live' } });
       }
       return statusResponseSchema.parse({ data: {
         rooms: { status: 'ready', data: household.rooms, updatedAt: household.updatedAt },
         overview: { status: 'ready', data: { activeDeviceCount: household.activeDeviceCount, doorStatus: household.doorStatus }, updatedAt: household.updatedAt },
-        alerts: { status: 'ready', data: household.alerts, updatedAt: household.updatedAt },
       }, meta: { generatedAt, mode: 'live' } });
     });
   };

@@ -29,7 +29,7 @@ describe('HomeAssistantClient', () => {
     const result = await client.getWeather();
 
     expect(result.entityId).toBe('weather.home');
-    expect(result.data).toMatchObject({ condition: '阵雨', temperature: 27, feelsLike: 30, humidity: 88, windSpeed: 15.5, pressure: 1001, uvIndex: 7 });
+    expect(result.data).toMatchObject({ condition: '阵雨', temperature: 27, humidity: 88, windSpeed: 15.5, pressure: 1001, uvIndex: 7 });
     expect(result.data.hourly?.[0]).toMatchObject({ condition: '阵雨', temperature: 27, precipitation: 1.2, precipitationUnit: 'mm', precipitationProbability: 60 });
     expect(result.data.daily?.[0]).toMatchObject({ date: '今天', low: 25, high: 31 });
     expect(fetcher).toHaveBeenCalledTimes(3);

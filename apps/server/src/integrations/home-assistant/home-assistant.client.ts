@@ -136,7 +136,7 @@ export class HomeAssistantClient {
     if (temperature === undefined) throw new HomeAssistantError(`${state.entity_id} 缺少 temperature 属性`);
 
     const unit = typeof state.attributes.temperature_unit === 'string' ? state.attributes.temperature_unit : '°C';
-    const hourly = hourlyForecast.slice(0, 12).flatMap((item) => {
+    const hourly = hourlyForecast.slice(0, 6).flatMap((item) => {
         if (!item.datetime || typeof item.temperature !== 'number') return [];
         return [{
           time: new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', hour12: false, timeZone: this.options.timezone }).format(new Date(item.datetime)).replace(':00', '时'),
@@ -146,7 +146,7 @@ export class HomeAssistantClient {
           ...(typeof item.precipitation_probability === 'number' ? { precipitationProbability: item.precipitation_probability } : {}),
         }];
       });
-    const daily = dailyForecast.slice(0, 7).flatMap((item, index) => {
+    const daily = dailyForecast.slice(0, 5).flatMap((item, index) => {
         if (!item.datetime || typeof item.temperature !== 'number') return [];
         const low = typeof item.templow === 'number' ? item.templow : item.temperature;
         return [{
@@ -160,14 +160,12 @@ export class HomeAssistantClient {
       unit,
       ...(hourly.length > 0 ? { hourly } : {}),
       ...(daily.length > 0 ? { daily } : {}),
-      ...(numberAttribute(state.attributes, 'apparent_temperature') !== undefined ? { feelsLike: numberAttribute(state.attributes, 'apparent_temperature') } : {}),
       ...(typeof currentForecast?.humidity === 'number' ? { humidity: currentForecast.humidity } : numberAttribute(state.attributes, 'humidity') !== undefined ? { humidity: numberAttribute(state.attributes, 'humidity') } : {}),
       ...(typeof currentForecast?.wind_speed === 'number' ? { windSpeed: currentForecast.wind_speed } : numberAttribute(state.attributes, 'wind_speed') !== undefined ? { windSpeed: numberAttribute(state.attributes, 'wind_speed') } : {}),
       ...(typeof state.attributes.wind_speed_unit === 'string' ? { windUnit: state.attributes.wind_speed_unit } : {}),
       ...(numberAttribute(state.attributes, 'pressure') !== undefined ? { pressure: numberAttribute(state.attributes, 'pressure') } : {}),
       ...(typeof state.attributes.pressure_unit === 'string' ? { pressureUnit: state.attributes.pressure_unit } : {}),
       ...(typeof currentForecast?.uv_index === 'number' ? { uvIndex: currentForecast.uv_index } : numberAttribute(state.attributes, 'uv_index') !== undefined ? { uvIndex: numberAttribute(state.attributes, 'uv_index') } : {}),
-      ...(typeof state.attributes.attribution === 'string' ? { source: state.attributes.attribution } : {}),
     };
 
     return { data, updatedAt: state.last_updated ?? new Date().toISOString(), entityId: state.entity_id };

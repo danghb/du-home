@@ -4,6 +4,8 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { AppConfig } from '../../config/config.js';
 import type { PhotoIndexService } from './photo-index.service.js';
 import path from 'node:path';
+import { stat } from 'node:fs/promises';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 
 const DEFAULT_PHOTO_BATCH_SIZE = 64;
 const MAX_PHOTO_BATCH_SIZE = 200;
@@ -22,6 +24,26 @@ function imageContentType(filePath: string) {
     case '.webp': return 'image/webp';
     default: return 'application/octet-stream';
   }
+}
+
+async function sendCachedImage(request: FastifyRequest, reply: FastifyReply, index: PhotoIndexService, filePath: string) {
+  const fileStat = await stat(filePath).catch(() => null);
+  if (!fileStat) return reply.code(404).send({ error: 'photo_not_found' });
+  const modifiedAt = new Date(fileStat.mtimeMs);
+  const etag = `"${fileStat.size.toString(16)}-${Math.trunc(fileStat.mtimeMs).toString(16)}"`;
+  reply
+    .header('Cache-Control', 'private, max-age=86400')
+    .header('ETag', etag)
+    .header('Last-Modified', modifiedAt.toUTCString());
+
+  const ifNoneMatch = request.headers['if-none-match'];
+  const ifModifiedSince = request.headers['if-modified-since'];
+  const notModifiedByTag = typeof ifNoneMatch === 'string' && ifNoneMatch.split(',').map((value) => value.trim()).includes(etag);
+  const modifiedSince = typeof ifModifiedSince === 'string' ? Date.parse(ifModifiedSince) : Number.NaN;
+  const notModifiedByDate = !ifNoneMatch && Number.isFinite(modifiedSince)
+    && Math.floor(fileStat.mtimeMs / 1_000) <= Math.floor(modifiedSince / 1_000);
+  if (notModifiedByTag || notModifiedByDate) return reply.code(304).send();
+  return reply.type(imageContentType(filePath)).send(index.stream(filePath));
 }
 
 export function createPhotosRoutes(config: AppConfig, index: PhotoIndexService): FastifyPluginAsync {
@@ -44,12 +66,12 @@ export function createMediaRoutes(index: PhotoIndexService): FastifyPluginAsync 
     app.get<{ Params: { photoId: string } }>('/display/:photoId', async (request, reply) => {
       const filePath = await index.display(request.params.photoId);
       if (!filePath) return reply.code(404).send({ error: 'photo_not_found' });
-      return reply.type('image/webp').send(index.stream(filePath));
+      return sendCachedImage(request, reply, index, filePath);
     });
     app.get<{ Params: { photoId: string } }>('/thumbnail/:photoId', async (request, reply) => {
       const filePath = index.thumbnail(request.params.photoId);
       if (!filePath) return reply.code(404).send({ error: 'photo_not_found' });
-      return reply.type('image/webp').send(index.stream(filePath));
+      return sendCachedImage(request, reply, index, filePath);
     });
   };
 }

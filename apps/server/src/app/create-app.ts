@@ -9,6 +9,7 @@ import { createMediaRoutes, createPhotosRoutes } from '../modules/photos/photos.
 import { PhotoIndexService } from '../modules/photos/photo-index.service.js';
 import { createStatusRoutes } from '../modules/status/status.route.js';
 import { createDisplayConfigRoutes } from '../modules/display/display-config.route.js';
+import { createWeatherRoutes } from '../modules/weather/weather.route.js';
 import { HomeAssistantClient } from '../integrations/home-assistant/home-assistant.client.js';
 import { HomeAssistantHouseholdService } from '../integrations/home-assistant/home-assistant-household.service.js';
 
@@ -30,7 +31,8 @@ export async function createApp(config: AppConfig) {
   app.addHook('onClose', async () => photoIndex.stop());
   app.addHook('onClose', async () => householdService?.stop());
 
-  await app.register(createDashboardRoutes(config, householdService, photoIndex), { prefix: '/api/v1' });
+  await app.register(createWeatherRoutes(config), { prefix: '/api/v1' });
+  await app.register(createDashboardRoutes(config, householdService), { prefix: '/api/v1' });
   await app.register(createStatusRoutes(config, householdService), { prefix: '/api/v1' });
   await app.register(createPhotosRoutes(config, photoIndex), { prefix: '/api/v1' });
   await app.register(createDisplayConfigRoutes(config), { prefix: '/api/v1' });

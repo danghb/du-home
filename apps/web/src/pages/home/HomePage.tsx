@@ -14,9 +14,11 @@ export function HomePage() {
     return () => window.clearInterval(timer);
   }, []);
   const load = useCallback(() => api.dashboard(), []);
+  const loadWeather = useCallback(() => api.weather(), []);
   const loadPhotos = useCallback(() => api.photos(), []);
   const loadConfig = useCallback(() => api.config(), []);
   const state = useApiData(load, { cacheKey: 'dashboard', refreshIntervalMs: 30_000 });
+  const weatherState = useApiData(loadWeather, { cacheKey: 'weather', refreshIntervalMs: 5 * 60_000 });
   const photoState = useApiData(loadPhotos, { cacheKey: 'photos', refreshIntervalMs: 5 * 60_000 });
   const configState = useApiData(loadConfig, { cacheKey: 'display-config' });
   const photos = photoState.status === 'ready' && photoState.data.data.photos.status === 'ready'
@@ -41,14 +43,16 @@ export function HomePage() {
   if (state.status === 'loading') return <div className="page-message">正在读取家庭信息…</div>;
   if (state.status === 'error') return <div className="page-message">{state.message}</div>;
   const dashboard = state.data.data;
-  const weather = dashboard.weather.status === 'ready' ? dashboard.weather.data : null;
+  const weather = weatherState.status === 'ready' && weatherState.data.data.weather.status === 'ready'
+    ? weatherState.data.data.weather.data
+    : null;
   const todayForecast = weather?.daily?.[0];
-  const todayTodos = dashboard.todayTodos.status === 'ready' ? dashboard.todayTodos.data : [];
+  const todayTodoCount = dashboard.todayTodoCount.status === 'ready' ? dashboard.todayTodoCount.data : 0;
   const memoItems = dashboard.memos.status === 'ready' ? dashboard.memos.data : [];
   const memos = selectDisplayedMemos(memoItems, now);
   const shopping = dashboard.shopping.status === 'ready' ? dashboard.shopping.data.slice(0, 8) : [];
   const household = dashboard.householdSummary?.status === 'ready' ? dashboard.householdSummary.data : null;
-  const recentPhoto = photos[photoIndex] ?? (dashboard.recentPhoto.status === 'ready' ? dashboard.recentPhoto.data : null);
+  const recentPhoto = photos[photoIndex] ?? null;
   const allListsEmpty = memos.totalCount === 0 && shopping.length === 0;
   const overviewAlerts = household ? [...household.alerts].sort((a, b) => Number(b.severity === 'warning') - Number(a.severity === 'warning')).slice(0, 2) : [];
   const timeText = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Hong_Kong', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
@@ -73,7 +77,7 @@ export function HomePage() {
             </>
           ) : <div className={styles.weatherUnavailable}>天气暂不可用</div>}
         </div>
-        <div className={styles.summary}>今天有 {todayTodos.length} 项家庭事项</div>
+        <div className={styles.summary}>今天有 {todayTodoCount} 项家庭事项</div>
       </header>
 
       <section className={`${styles.card} ${styles.memos} ${allListsEmpty ? styles.compactMemos : ''}`}>
