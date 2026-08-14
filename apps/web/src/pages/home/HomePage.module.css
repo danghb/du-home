@@ -10,6 +10,7 @@
 .weatherCopy strong small { margin-left: 3px; font-size: 29px; font-weight: 600; vertical-align: 17px; }
 .weatherCopy b { display: flex; align-items: center; margin-top: 6px; color: #42504b; font-size: 24px; font-weight: 600; }
 .weatherCopy b i { width: 5px; height: 5px; margin: 0 10px; border-radius: 50%; background: #9aa6a0; }
+.weatherRange { display: block; margin-top: 7px; color: #747b74; font-size: 19px; font-weight: 600; white-space: nowrap; }
 .weatherVisual { position: absolute; right: 8px; top: 38px; z-index: 2; }
 .weatherUnavailable { width: 100%; color: #747b74; font-size: 25px; font-weight: 600; text-align: center; }
 .summary { position: absolute; left: 78px; top: 276px; font-size: 31px; font-weight: 600; }
@@ -37,13 +38,15 @@
 .memoRow.memoOverdue i { background: #db705c; box-shadow: 0 0 0 7px rgba(219,112,92,.12); }
 .memoRow.memoOverdue > span { color: #b44f3d; font-weight: 700; }
 .memoMore { position: absolute; right: 48px; bottom: 22px; color: #747b74; font-size: 23px; font-weight: 600; }
-.shopping { top: 850px; height: 300px; }
-.compactShopping { top: 584px; height: 210px; }
-.shoppingGrid { position: absolute; left: 32px; right: 32px; top: 98px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 56px; row-gap: 16px; }
-.shoppingItem { display: flex; align-items: center; font-size: 28px; }
+.shopping { left: 72px; top: 850px; width: 390px; height: 852px; }
+.compactShopping { left: 72px; top: 584px; width: 936px; height: 210px; }
+.shoppingGrid { position: absolute; left: 32px; right: 32px; top: 98px; display: grid; grid-template-columns: 1fr; row-gap: 24px; }
+.compactShopping .shoppingGrid { grid-template-columns: 1fr 1fr; column-gap: 56px; row-gap: 16px; }
+.shoppingItem { display: flex; align-items: center; min-width: 0; font-size: 28px; }
+.shoppingItem span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .shoppingItem i { width: 30px; height: 30px; border: 1px solid #cbd0ca; border-radius: 7px; margin-right: 18px; color: white; text-align: center; font-size: 22px; line-height: 30px; font-style: normal; }
 .shoppingItem i.checked { background: #4d8fd7; border-color: #4d8fd7; }
-.photo { top: 1182px; height: 520px; }
+.photo { left: 486px; top: 850px; width: 522px; height: 852px; }
 .familyOverview { top: 826px; height: 340px; }
 .overviewMetrics { position: absolute; left: 32px; right: 32px; top: 88px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .overviewMetrics div { display: flex; align-items: center; justify-content: space-between; padding: 17px 20px; border-radius: 18px; background: #f7f7f3; }
@@ -55,7 +58,9 @@
 .overviewAlerts i.alertWarning { background: #e5a33d; }
 .overviewAlerts span { font-size: 24px; font-weight: 650; }
 .overviewAlerts strong { color: #747b74; font-size: 21px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.compactPhoto { top: 1198px; }
-.photoMore { position: absolute; right: 48px; top: 31px; color: #4d8fd7; font-size: 23px; font-weight: 600; }
-.photoArt { position: absolute !important; left: 32px; top: 90px; width: 872px; height: 398px; border-radius: 24px; object-fit: cover; }
-.photoCaption { position: absolute; left: 64px; bottom: 37px; color: white; font-size: 27px; z-index: 5; }
+.compactPhoto { left: 72px; top: 1198px; width: 936px; height: 520px; }
+.photoMore { position: absolute; right: 32px; top: 31px; color: #4d8fd7; font-size: 22px; font-weight: 600; }
+.photoArt { position: absolute !important; left: 24px; top: 90px; width: 474px; height: 730px; border-radius: 24px; object-fit: cover; }
+.photoCaption { position: absolute; left: 52px; right: 40px; bottom: 42px; color: white; font-size: 27px; z-index: 5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.compactPhoto .photoArt { left: 32px; width: 872px; height: 398px; }
+.compactPhoto .photoCaption { left: 64px; bottom: 37px; }

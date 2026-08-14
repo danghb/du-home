@@ -2,18 +2,17 @@
 .page > h1 { position: absolute; left: 72px; top: 48px; margin: 0; font-size: 62px; }
 .page > p { position: absolute; left: 76px; top: 137px; margin: 0; color: #747b74; font-size: 30px; }
 .page > time { position: absolute; right: 72px; top: 72px; color: #747b74; font-size: 25px; font-weight: 600; }
-.hero { position: absolute; left: 72px; top: 212px; width: 936px; height: 892px; background: white; border-radius: 30px; }
-.heroArt { position: absolute !important; left: 24px; top: 24px; width: 888px; height: 818px; border-radius: 24px; object-fit: cover; }
-.heroArtEnter { animation: photo-enter 700ms cubic-bezier(.22,.61,.36,1) both; }
-@keyframes photo-enter { from { opacity: .15; transform: scale(1.012); } to { opacity: 1; transform: scale(1); } }
-.caption { position: absolute; left: 24px; right: 24px; bottom: 24px; height: 230px; border-radius: 24px; background: #35654f; color: white; padding: 50px 48px; z-index: 5; }
+.hero { position: absolute; left: 72px; top: 212px; width: 936px; height: 1320px; background: white; border-radius: 30px; }
+.heroArt { position: absolute !important; left: 24px; top: 24px; width: 888px; height: 1272px; border-radius: 24px; object-fit: cover; }
+.caption { position: absolute; left: 24px; right: 24px; bottom: 24px; height: 310px; border-radius: 0 0 24px 24px; background: linear-gradient(0deg, rgba(18, 24, 22, .78) 0%, rgba(18, 24, 22, .42) 54%, rgba(18, 24, 22, 0) 100%); color: white; padding: 132px 48px 34px; z-index: 5; }
 .caption small { display: block; font-size: 25px; font-weight: 600; letter-spacing: 3px; }
-.caption strong { display: block; margin-top: 18px; font-size: 46px; }
-.caption span { display: block; margin-top: 14px; font-size: 25px; }
-.memories { position: absolute; left: 72px; top: 1151px; width: 936px; display: flex; align-items: center; justify-content: space-between; }
-.memories h2 { margin: 0; font-size: 37px; }
+.caption strong { display: block; margin-top: 12px; font-size: 42px; }
+.caption span { display: block; margin-top: 10px; font-size: 22px; color: rgba(255,255,255,.85); }
+.memories { position: absolute; left: 72px; top: 1570px; width: 936px; display: flex; align-items: center; justify-content: space-between; }
+.memories h2 { margin: 0; font-size: 32px; }
 .memories span { color: #4d8fd7; font-size: 24px; font-weight: 600; }
-.grid { position: absolute; left: 72px; top: 1220px; width: 936px; display: grid; grid-template-columns: repeat(3, 296px); gap: 30px 24px; }
-.grid article { position: relative; height: 200px; border-radius: 24px; overflow: hidden; }
+.grid { position: absolute; left: 72px; top: 1634px; width: 936px; display: grid; grid-template-columns: repeat(6, 136px); gap: 24px; }
+.grid article { position: relative; height: 146px; border-radius: 18px; overflow: hidden; }
 .grid article > div, .grid article > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: linear-gradient(90deg, var(--sky) 0 50%, var(--tint) 50% 100%); }
-.grid b { position: absolute; left: 22px; bottom: 16px; color: white; font-size: 22px; z-index: 4; }
+.grid article::after { content: ''; position: absolute; inset: 45% 0 0; background: linear-gradient(transparent, rgba(18,24,22,.5)); }
+.grid b { position: absolute; left: 14px; bottom: 11px; color: white; font-size: 18px; z-index: 4; }

@@ -42,6 +42,7 @@ export function HomePage() {
   if (state.status === 'error') return <div className="page-message">{state.message}</div>;
   const dashboard = state.data.data;
   const weather = dashboard.weather.status === 'ready' ? dashboard.weather.data : null;
+  const todayForecast = weather?.daily?.[0];
   const todayTodos = dashboard.todayTodos.status === 'ready' ? dashboard.todayTodos.data : [];
   const memoItems = dashboard.memos.status === 'ready' ? dashboard.memos.data : [];
   const memos = selectDisplayedMemos(memoItems, now);
@@ -66,6 +67,7 @@ export function HomePage() {
                 <span>今日天气</span>
                 <strong>{weather.temperature}<small>{weather.unit}</small></strong>
                 <b>{weather.condition}<i />室外</b>
+                <small className={styles.weatherRange}>最高 {todayForecast?.high ?? '—'}°　最低 {todayForecast?.low ?? '—'}°</small>
               </div>
               <div className={styles.weatherVisual}><WeatherScene condition={weather.condition} /></div>
             </>
@@ -114,7 +116,7 @@ export function HomePage() {
 
       <section className={`${styles.card} ${styles.photo} ${allListsEmpty && household ? styles.compactPhoto : ''}`}>
         <div className={styles.cardTitle}>家庭照片</div><span className={styles.photoMore}>随机回忆&nbsp; →</span>
-        <PhotoImage className={styles.photoArt} photo={recentPhoto} />
+        <PhotoImage className={styles.photoArt} photo={recentPhoto} source="original" />
         <strong className={styles.photoCaption}>{recentPhoto ? recentPhoto.title : '等待加入家庭照片'}</strong>
       </section>
       <nav className="page-dots" aria-label="页面位置"><i className="active" /><i /><i /><i /></nav>

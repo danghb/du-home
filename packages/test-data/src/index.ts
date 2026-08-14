@@ -79,7 +79,7 @@ export const mockStatus: StatusResponse = {
   meta: { generatedAt, mode: 'mock' },
 };
 
-const mockPhotos = Array.from({ length: 6 }, (_, index) => ({
+const mockPhotos = Array.from({ length: 8 }, (_, index) => ({
   id: `photo-${index + 1}`,
   mediaUrl: `/mock/photo-${index + 1}.svg`,
   thumbnailUrl: `/mock/photo-${index + 1}.svg`,

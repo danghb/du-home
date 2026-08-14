@@ -7,9 +7,10 @@ interface PhotoImageProps {
   className?: string | undefined;
   variant?: number;
   alt?: string | undefined;
+  source?: 'thumbnail' | 'original';
 }
 
-export function PhotoImage({ photo, className = '', variant = 0, alt }: PhotoImageProps) {
+export function PhotoImage({ photo, className = '', variant = 0, alt, source = 'thumbnail' }: PhotoImageProps) {
   const [displayedPhoto, setDisplayedPhoto] = useState(photo);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -29,10 +30,11 @@ export function PhotoImage({ photo, className = '', variant = 0, alt }: PhotoIma
     preload.onerror = () => {
       if (active && !displayedPhoto) setFailed(true);
     };
-    preload.src = photo.thumbnailUrl;
+    preload.src = source === 'original' ? photo.mediaUrl : photo.thumbnailUrl;
     return () => { active = false; };
-  }, [displayedPhoto, photo]);
+  }, [displayedPhoto, photo, source]);
 
   if (!displayedPhoto || failed) return <PhotoArtwork className={className} variant={variant} />;
-  return <img className={className} src={displayedPhoto.thumbnailUrl} alt={alt ?? displayedPhoto.title} onError={() => setFailed(true)} />;
+  const imageUrl = source === 'original' ? displayedPhoto.mediaUrl : displayedPhoto.thumbnailUrl;
+  return <img className={className} src={imageUrl} alt={alt ?? displayedPhoto.title} onError={() => setFailed(true)} />;
 }
