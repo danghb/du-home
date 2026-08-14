@@ -116,7 +116,7 @@ export function HomePage() {
 
       <section className={`${styles.card} ${styles.photo} ${allListsEmpty && household ? styles.compactPhoto : ''}`}>
         <div className={styles.cardTitle}>家庭照片</div><span className={styles.photoMore}>随机回忆&nbsp; →</span>
-        <PhotoImage className={styles.photoArt} photo={recentPhoto} source="original" />
+        <PhotoImage className={styles.photoArt} photo={recentPhoto} source="display" />
         <strong className={styles.photoCaption}>{recentPhoto ? recentPhoto.title : '等待加入家庭照片'}</strong>
       </section>
       <nav className="page-dots" aria-label="页面位置"><i className="active" /><i /><i /><i /></nav>

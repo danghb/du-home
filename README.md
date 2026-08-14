@@ -91,7 +91,7 @@ PAGE_ROTATION_ENABLED=true
 PAGE_ROTATION_SCHEDULE=home:30,weather:30,status:30,photos:45
 ```
 
-`PHOTO_HOST_PATH` 必须是 NAS 上真实存在的照片目录，容器只读挂载它。WebP 缩略图保存在 Docker 自动管理的 `photo-cache` 命名卷中，无需配置缓存目录；重建容器时缓存仍会保留。`.env` 已被 Git 和 Docker 构建上下文排除，不要提交或复制到公开位置。
+`PHOTO_HOST_PATH` 必须是 NAS 上真实存在的照片目录，容器只读挂载它。WebP 缩略图和按需生成的屏幕显示图保存在 Docker 自动管理的 `photo-cache` 命名卷中，无需配置缓存目录；重建容器时缓存仍会保留。主照片接口不会把数 MB 的原图传给浏览器，而是在首次显示时生成最大 `1280 × 1600`、质量 82 的 WebP，后续直接复用缓存。`.env` 已被 Git 和 Docker 构建上下文排除，不要提交或复制到公开位置。
 
 ### 3. 拉取和启动
 
@@ -110,6 +110,6 @@ sudo docker-compose logs --tail=100 family-display
 
 显示方向由 URL 控制，不需要切换树莓派的系统显示方向：默认地址为竖屏；`?orientation=landscape` 将整张画布顺时针旋转为横屏；`?orientation=landscape-reverse` 反向旋转。页面切换时方向参数会保留。
 
-首页照片默认每 20 秒随机轮换且不会连续重复。页面自动轮换默认开启，`PAGE_ROTATION_SCHEDULE` 使用“页面 ID:停留秒数”的格式；当前页面 ID 为 `home`、`weather`、`status`、`photos`。设置 `PAGE_ROTATION_ENABLED=false` 可关闭自动轮换。修改 `.env` 后执行 `sudo docker-compose up -d --no-build` 重建容器使配置生效。
+首页照片默认每 20 秒随机轮换且不会连续重复；家庭相册首次进入、自动轮换和下方六张回忆也使用随机选择，并避免主图连续重复。页面自动轮换默认开启，`PAGE_ROTATION_SCHEDULE` 使用“页面 ID:停留秒数”的格式；当前页面 ID 为 `home`、`weather`、`status`、`photos`。设置 `PAGE_ROTATION_ENABLED=false` 可关闭自动轮换。修改 `.env` 后执行 `sudo docker-compose up -d --no-build` 重建容器使配置生效。
 
 仅当 NAS 能正常访问 Docker Hub 时，才使用 `sudo docker-compose build` 在 NAS 本地构建；日常部署不采用该方式。

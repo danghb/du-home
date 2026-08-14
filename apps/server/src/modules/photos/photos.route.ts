@@ -32,10 +32,10 @@ export function createPhotosRoutes(config: AppConfig, index: PhotoIndexService):
 
 export function createMediaRoutes(index: PhotoIndexService): FastifyPluginAsync {
   return async (app) => {
-    app.get<{ Params: { photoId: string } }>('/original/:photoId', async (request, reply) => {
-      const filePath = index.original(request.params.photoId);
+    app.get<{ Params: { photoId: string } }>('/display/:photoId', async (request, reply) => {
+      const filePath = await index.display(request.params.photoId);
       if (!filePath) return reply.code(404).send({ error: 'photo_not_found' });
-      return reply.type(imageContentType(filePath)).send(index.stream(filePath));
+      return reply.type('image/webp').send(index.stream(filePath));
     });
     app.get<{ Params: { photoId: string } }>('/thumbnail/:photoId', async (request, reply) => {
       const filePath = index.thumbnail(request.params.photoId);

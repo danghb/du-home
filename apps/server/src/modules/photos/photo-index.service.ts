@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import exifr from 'exifr';
 import sharp from 'sharp';
@@ -9,10 +9,14 @@ import type { Photo } from '@family-display/contracts';
 const SUPPORTED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 const INDEX_VERSION = 1;
 const INDEX_FILE = 'index.json';
+const DISPLAY_DIRECTORY = 'display';
+const DISPLAY_MAX_WIDTH = 1280;
+const DISPLAY_MAX_HEIGHT = 1600;
 
 interface IndexedPhoto extends Photo {
   sourcePath: string;
   thumbnailPath: string;
+  displayPath: string;
   signature: string;
 }
 
@@ -34,6 +38,7 @@ export class PhotoIndexService {
   private timer: NodeJS.Timeout | null = null;
   private scanInProgress = false;
   private stopped = false;
+  private readonly displayInFlight = new Map<string, Promise<string | null>>();
 
   constructor(
     private readonly photoRoot: string,
@@ -64,11 +69,20 @@ export class PhotoIndexService {
   list(): Photo[] {
     return [...this.photos.values()]
       .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt))
-      .map(({ sourcePath: _sourcePath, thumbnailPath: _thumbnailPath, signature: _signature, ...photo }) => photo);
+      .map(({ sourcePath: _sourcePath, thumbnailPath: _thumbnailPath, displayPath: _displayPath, signature: _signature, ...photo }) => photo);
   }
 
-  original(id: string) { return this.photos.get(id)?.sourcePath ?? null; }
   thumbnail(id: string) { return this.photos.get(id)?.thumbnailPath ?? null; }
+  async display(id: string) {
+    const photo = this.photos.get(id);
+    if (!photo) return null;
+    const existing = this.displayInFlight.get(id);
+    if (existing) return existing;
+
+    const task = this.ensureDisplayImage(photo).finally(() => this.displayInFlight.delete(id));
+    this.displayInFlight.set(id, task);
+    return task;
+  }
   stream(filePath: string) { return createReadStream(filePath); }
 
   async restore() {
@@ -94,12 +108,13 @@ export class PhotoIndexService {
       if (sourcePath !== rootPath && !sourcePath.startsWith(`${rootPath}${path.sep}`)) continue;
       restored.set(photo.id, {
         id: photo.id,
-        mediaUrl: `/media/original/${photo.id}`,
+        mediaUrl: `/media/display/${photo.id}`,
         thumbnailUrl: `/media/thumbnail/${photo.id}`,
         capturedAt: photo.capturedAt,
         title: photo.title,
         sourcePath,
         thumbnailPath: path.join(this.cacheRoot, `${photo.id}.webp`),
+        displayPath: path.join(this.cacheRoot, DISPLAY_DIRECTORY, `${photo.id}.webp`),
         signature: photo.signature,
       });
     }
@@ -170,6 +185,7 @@ export class PhotoIndexService {
     if (existing?.signature === signature) return existing;
 
     const thumbnailPath = path.join(this.cacheRoot, `${id}.webp`);
+    const displayPath = path.join(this.cacheRoot, DISPLAY_DIRECTORY, `${id}.webp`);
     const thumbnailStat = await stat(thumbnailPath).catch(() => null);
     if (!thumbnailStat || thumbnailStat.mtimeMs < fileStat.mtimeMs) {
       await sharp(filePath).autoOrient().resize({ width: 640, height: 420, fit: 'cover' }).webp({ quality: 80 }).toFile(thumbnailPath);
@@ -178,14 +194,43 @@ export class PhotoIndexService {
     const capturedDate = exif?.DateTimeOriginal instanceof Date ? exif.DateTimeOriginal : fileStat.mtime;
     return {
       id,
-      mediaUrl: `/media/original/${id}`,
+      mediaUrl: `/media/display/${id}`,
       thumbnailUrl: `/media/thumbnail/${id}`,
       capturedAt: capturedDate.toISOString(),
       title: `${capturedDate.getMonth() + 1}月${capturedDate.getDate()}日的照片`,
       sourcePath: filePath,
       thumbnailPath,
+      displayPath,
       signature,
     } satisfies IndexedPhoto;
+  }
+
+  private async ensureDisplayImage(photo: IndexedPhoto) {
+    const displayStat = await stat(photo.displayPath).catch(() => null);
+    const sourceStat = await stat(photo.sourcePath).catch(() => null);
+    if (displayStat && (!sourceStat || displayStat.mtimeMs >= sourceStat.mtimeMs)) return photo.displayPath;
+    if (!sourceStat) return null;
+
+    await mkdir(path.dirname(photo.displayPath), { recursive: true });
+    const temporaryPath = `${photo.displayPath}.tmp`;
+    try {
+      await sharp(photo.sourcePath)
+        .autoOrient()
+        .resize({
+          width: DISPLAY_MAX_WIDTH,
+          height: DISPLAY_MAX_HEIGHT,
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .webp({ quality: 82 })
+        .toFile(temporaryPath);
+      await rename(temporaryPath, photo.displayPath);
+      return photo.displayPath;
+    } catch (error) {
+      await unlink(temporaryPath).catch(() => undefined);
+      this.onError(error, photo.sourcePath);
+      return null;
+    }
   }
 
   private async persist() {

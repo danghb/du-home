@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../services/api';
 import { useApiData } from '../../hooks/useApiData';
 import { PhotoImage } from '../../components/PhotoImage/PhotoImage';
-import { movePhotoIndex, selectPhotoPreviews } from './photo-navigation';
+import { movePhotoIndex, pickRandomGalleryPhotoIndex, selectRandomPhotoPreviews } from './photo-navigation';
 import styles from './PhotosPage.module.css';
 
 const ROTATION_SECONDS = 12;
@@ -14,21 +14,23 @@ function formatDate(value: string, options: Intl.DateTimeFormatOptions) {
 export function PhotosPage() {
   const load = useCallback(() => api.photos(), []);
   const state = useApiData(load, { cacheKey: 'photos', refreshIntervalMs: 60_000 });
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [rotationRevision, setRotationRevision] = useState(0);
 
   const photos = state.status === 'ready' && state.data.data.photos.status === 'ready'
     ? state.data.data.photos.data
     : [];
+  const [currentIndex, setCurrentIndex] = useState(() => pickRandomGalleryPhotoIndex(photos));
   useEffect(() => {
     if (photos.length < 2) return;
     const timer = window.setInterval(
-      () => setCurrentIndex((index) => movePhotoIndex(index, 1, photos.length)),
+      () => setCurrentIndex((index) => pickRandomGalleryPhotoIndex(photos, index)),
       ROTATION_SECONDS * 1_000,
     );
     return () => window.clearInterval(timer);
   }, [photos.length, rotationRevision]);
-  useEffect(() => setCurrentIndex((index) => photos.length ? index % photos.length : 0), [photos.length]);
+  useEffect(() => setCurrentIndex((index) => index >= 0 && index < photos.length
+    ? index
+    : pickRandomGalleryPhotoIndex(photos)), [photos.length]);
   useEffect(() => {
     if (photos.length < 2) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -43,7 +45,7 @@ export function PhotosPage() {
   }, [photos.length]);
 
   const current = photos[currentIndex] ?? null;
-  const memories = useMemo(() => selectPhotoPreviews(photos, currentIndex), [photos, currentIndex]);
+  const memories = useMemo(() => selectRandomPhotoPreviews(photos, currentIndex), [photos, currentIndex]);
   const now = new Date();
   const today = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Hong_Kong', month: 'numeric', day: 'numeric', weekday: 'short' }).format(now);
 
@@ -53,14 +55,14 @@ export function PhotosPage() {
   return <section className={styles.page}>
     <h1>家庭相册</h1><p>把平常的小日子留在这里</p><time>{today}</time>
     <section className={styles.hero}>
-      <PhotoImage className={styles.heroArt} photo={current} source="original" />
+      <PhotoImage className={styles.heroArt} photo={current} source="display" />
       <div className={styles.caption}>
         <small>{current ? formatDate(current.capturedAt, { year: 'numeric', month: '2-digit', day: '2-digit' }).replaceAll('/', ' · ') : '家庭相册'}</small>
         <strong>{current?.title ?? '还没有可显示的照片'}</strong>
         <span>{photos.length > 1 ? `↑ 上一张　↓ 下一张　·　${ROTATION_SECONDS} 秒后自动切换` : '将照片复制到 sample-photos 后重启服务'}</span>
       </div>
     </section>
-    <header className={styles.memories}><h2>最近照片</h2><span>{photos.length} 张</span></header>
+    <header className={styles.memories}><h2>随机回忆</h2><span>{photos.length} 张</span></header>
     <div className={styles.grid}>{memories.map((photo, index) => <article key={photo.id}>
       <PhotoImage photo={photo} variant={index % 3} />
       <b>{formatDate(photo.capturedAt, { month: 'numeric', day: 'numeric' })}</b>

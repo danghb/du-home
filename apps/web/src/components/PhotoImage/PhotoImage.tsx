@@ -7,7 +7,7 @@ interface PhotoImageProps {
   className?: string | undefined;
   variant?: number;
   alt?: string | undefined;
-  source?: 'thumbnail' | 'original';
+  source?: 'thumbnail' | 'display';
 }
 
 export function PhotoImage({ photo, className = '', variant = 0, alt, source = 'thumbnail' }: PhotoImageProps) {
@@ -30,11 +30,11 @@ export function PhotoImage({ photo, className = '', variant = 0, alt, source = '
     preload.onerror = () => {
       if (active && !displayedPhoto) setFailed(true);
     };
-    preload.src = source === 'original' ? photo.mediaUrl : photo.thumbnailUrl;
+    preload.src = source === 'display' ? photo.mediaUrl : photo.thumbnailUrl;
     return () => { active = false; };
   }, [displayedPhoto, photo, source]);
 
   if (!displayedPhoto || failed) return <PhotoArtwork className={className} variant={variant} />;
-  const imageUrl = source === 'original' ? displayedPhoto.mediaUrl : displayedPhoto.thumbnailUrl;
+  const imageUrl = source === 'display' ? displayedPhoto.mediaUrl : displayedPhoto.thumbnailUrl;
   return <img className={className} src={imageUrl} alt={alt ?? displayedPhoto.title} onError={() => setFailed(true)} />;
 }

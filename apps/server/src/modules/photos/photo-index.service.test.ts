@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, rename, stat, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -9,7 +9,12 @@ const temporaryDirectories: string[] = [];
 
 afterEach(async () => {
   const { rm } = await import('node:fs/promises');
-  await Promise.all(temporaryDirectories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })));
+  await Promise.all(temporaryDirectories.splice(0).map((directory) => rm(directory, {
+    recursive: true,
+    force: true,
+    maxRetries: 2,
+    retryDelay: 50,
+  })));
 });
 
 describe('PhotoIndexService', () => {
@@ -28,9 +33,18 @@ describe('PhotoIndexService', () => {
     expect(service.list()).toHaveLength(1);
     const thumbnailPath = service.thumbnail(service.list()[0]!.id)!;
     const firstThumbnailTime = (await stat(thumbnailPath)).mtimeMs;
+    const displayPath = await service.display(service.list()[0]!.id);
+    expect(displayPath).not.toBeNull();
+    const displayMetadata = await sharp(await readFile(displayPath!)).metadata();
+    expect(displayMetadata.format).toBe('webp');
+    expect(displayMetadata.width).toBeLessThanOrEqual(1280);
+    expect(displayMetadata.height).toBeLessThanOrEqual(1600);
+    const firstDisplayTime = (await stat(displayPath!)).mtimeMs;
 
     await service.scan();
     expect((await stat(thumbnailPath)).mtimeMs).toBe(firstThumbnailTime);
+    expect(await service.display(service.list()[0]!.id)).toBe(displayPath);
+    expect((await stat(displayPath!)).mtimeMs).toBe(firstDisplayTime);
 
     await writeFile(path.join(source, 'damaged.jpg'), 'not an image');
     await service.scan();
