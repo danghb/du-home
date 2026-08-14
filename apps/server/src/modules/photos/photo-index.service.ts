@@ -12,6 +12,12 @@ const INDEX_FILE = 'index.json';
 const DISPLAY_DIRECTORY = 'display';
 const DISPLAY_MAX_WIDTH = 1280;
 const DISPLAY_MAX_HEIGHT = 1600;
+const IGNORED_DIRECTORY_NAMES = new Set(['@eaDir', '#recycle', '@tmp', '.AppleDouble']);
+const CACHED_PHOTO_FILE_PATTERN = /^[a-f0-9]{24}\.webp$/;
+
+function containsIgnoredDirectory(relativePath: string) {
+  return relativePath.split(/[\\/]/).some((segment) => IGNORED_DIRECTORY_NAMES.has(segment));
+}
 
 interface IndexedPhoto extends Photo {
   sourcePath: string;
@@ -121,8 +127,13 @@ export class PhotoIndexService {
 
     const restored = new Map<string, IndexedPhoto>();
     const rootPath = path.resolve(this.photoRoot);
+    let ignoredEntries = 0;
     for (const photo of parsed.photos) {
       if (!this.isPersistedPhoto(photo)) continue;
+      if (containsIgnoredDirectory(photo.relativePath)) {
+        ignoredEntries += 1;
+        continue;
+      }
       const sourcePath = path.resolve(rootPath, photo.relativePath);
       if (sourcePath !== rootPath && !sourcePath.startsWith(`${rootPath}${path.sep}`)) continue;
       restored.set(photo.id, {
@@ -139,6 +150,9 @@ export class PhotoIndexService {
     }
     this.photos.clear();
     for (const [id, photo] of restored) this.photos.set(id, photo);
+    if (ignoredEntries > 0) {
+      await this.persist().catch((error) => this.onError(error, indexPath));
+    }
   }
 
   async scan() {
@@ -193,6 +207,7 @@ export class PhotoIndexService {
       this.photos.clear();
       for (const [id, photo] of next) this.photos.set(id, photo);
       await this.persist().catch((error) => this.onError(error, path.join(this.cacheRoot, INDEX_FILE)));
+      await this.pruneOrphanedCache().catch((error) => this.onError(error, this.cacheRoot));
     } finally {
       this.scanInProgress = false;
     }
@@ -294,9 +309,31 @@ export class PhotoIndexService {
     for (const entry of entries) {
       if (entry.isSymbolicLink()) continue;
       const entryPath = path.join(directory, entry.name);
-      if (entry.isDirectory()) files.push(...await this.walk(entryPath));
+      if (entry.isDirectory() && !IGNORED_DIRECTORY_NAMES.has(entry.name)) files.push(...await this.walk(entryPath));
       if (entry.isFile() && SUPPORTED_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) files.push(entryPath);
     }
     return files;
+  }
+
+  private async pruneOrphanedCache() {
+    const activeIds = new Set(this.photos.keys());
+    const pruneDirectory = async (directory: string) => {
+      const entries = await readdir(directory, { withFileTypes: true }).catch((error: NodeJS.ErrnoException) => {
+        if (error.code === 'ENOENT') return [];
+        throw error;
+      });
+      const orphanedEntries = entries
+        .filter((entry) => entry.isFile() && CACHED_PHOTO_FILE_PATTERN.test(entry.name))
+        .filter((entry) => !activeIds.has(path.basename(entry.name, '.webp')));
+      for (let offset = 0; offset < orphanedEntries.length; offset += 32) {
+        await Promise.all(orphanedEntries.slice(offset, offset + 32).map((entry) => (
+          unlink(path.join(directory, entry.name)).catch((error: NodeJS.ErrnoException) => {
+            if (error.code !== 'ENOENT') throw error;
+          })
+        )));
+      }
+    };
+    await pruneDirectory(this.cacheRoot);
+    await pruneDirectory(path.join(this.cacheRoot, DISPLAY_DIRECTORY));
   }
 }

@@ -26,6 +26,13 @@ describe('PhotoIndexService', () => {
     await mkdir(source);
     const photoPath = path.join(source, 'landscape.jpg');
     await sharp({ create: { width: 800, height: 600, channels: 3, background: '#77aadd' } }).jpeg().toFile(photoPath);
+    const synologyMetadata = path.join(source, '@eaDir', 'landscape.jpg');
+    await mkdir(synologyMetadata, { recursive: true });
+    await sharp({ create: { width: 320, height: 240, channels: 3, background: '#779977' } }).jpeg().toFile(path.join(synologyMetadata, 'SYNOPHOTO_THUMB_M.jpg'));
+    const orphanedId = 'f'.repeat(24);
+    await mkdir(path.join(cache, 'display'), { recursive: true });
+    await writeFile(path.join(cache, `${orphanedId}.webp`), 'stale thumbnail');
+    await writeFile(path.join(cache, 'display', `${orphanedId}.webp`), 'stale display');
     const errors: Array<string | undefined> = [];
     const service = new PhotoIndexService(source, cache, 60, (_error, filePath) => errors.push(filePath));
 
@@ -33,6 +40,8 @@ describe('PhotoIndexService', () => {
     expect(service.list()).toHaveLength(1);
     expect(service.count()).toBe(1);
     expect(service.sample(64)).toEqual(service.list());
+    await expect(stat(path.join(cache, `${orphanedId}.webp`))).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(stat(path.join(cache, 'display', `${orphanedId}.webp`))).rejects.toMatchObject({ code: 'ENOENT' });
     const thumbnailPath = service.thumbnail(service.list()[0]!.id)!;
     const firstThumbnailTime = (await stat(thumbnailPath)).mtimeMs;
     const displayPath = await service.display(service.list()[0]!.id);
@@ -52,6 +61,36 @@ describe('PhotoIndexService', () => {
     await service.scan();
     expect(service.list()).toHaveLength(1);
     expect(errors.some((filePath) => filePath?.endsWith('damaged.jpg'))).toBe(true);
+  });
+
+  it('drops Synology metadata thumbnails from a restored legacy index', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'family-display-photo-'));
+    temporaryDirectories.push(root);
+    const source = path.join(root, 'source');
+    const cache = path.join(root, 'cache');
+    const metadataDirectory = path.join(source, '@eaDir', 'clip.MOV');
+    await mkdir(metadataDirectory, { recursive: true });
+    await mkdir(cache, { recursive: true });
+    const thumbnailPath = path.join(metadataDirectory, 'SYNOPHOTO_THUMB_M.jpg');
+    await sharp({ create: { width: 320, height: 427, channels: 3, background: '#557755' } }).jpeg().toFile(thumbnailPath);
+    const fileStat = await stat(thumbnailPath);
+    await writeFile(path.join(cache, 'index.json'), JSON.stringify({
+      version: 1,
+      photos: [{
+        id: 'a'.repeat(24),
+        relativePath: '@eaDir/clip.MOV/SYNOPHOTO_THUMB_M.jpg',
+        signature: `ignored:${fileStat.size}:${fileStat.mtimeMs}`,
+        capturedAt: fileStat.mtime.toISOString(),
+        title: '不应显示的群晖缩略图',
+      }],
+    }));
+
+    const service = new PhotoIndexService(source, cache, 60);
+    await service.restore();
+
+    expect(service.count()).toBe(0);
+    const persisted = JSON.parse(await readFile(path.join(cache, 'index.json'), 'utf8')) as { photos: unknown[] };
+    expect(persisted.photos).toEqual([]);
   });
 
   it('restores the persisted index before starting a background rescan', async () => {
