@@ -11,6 +11,9 @@ const configSchema = z.object({
   PHOTO_ROOT: z.string().default('./sample-photos'),
   PHOTO_CACHE_ROOT: z.string().default('./cache/photos'),
   PHOTO_SCAN_INTERVAL_MINUTES: z.coerce.number().positive().default(60),
+  HOME_PHOTO_ROTATION_SECONDS: z.coerce.number().positive().default(20),
+  PAGE_ROTATION_ENABLED: z.enum(['true', 'false']).default('true'),
+  PAGE_ROTATION_SCHEDULE: z.string().default('home:30,weather:30,status:30,photos:45'),
   HA_BASE_URL: z.string().optional(),
   HA_TOKEN: z.string().optional(),
   HA_WEATHER_ENTITY: z.preprocess(
@@ -20,6 +23,16 @@ const configSchema = z.object({
   HA_WEATHER_REFRESH_MINUTES: z.coerce.number().positive().default(5),
   HA_DATA_REFRESH_SECONDS: z.coerce.number().positive().default(30),
 });
+
+function parsePageRotationSchedule(value: string) {
+  const durations: Record<string, number> = {};
+  for (const entry of value.split(',')) {
+    const [pageId, secondsText] = entry.split(':').map((part) => part.trim());
+    const seconds = Number(secondsText);
+    if (pageId && Number.isFinite(seconds) && seconds > 0) durations[pageId] = seconds;
+  }
+  return durations;
+}
 
 export type AppConfig = ReturnType<typeof loadConfig>;
 
@@ -36,6 +49,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     photoRoot: path.resolve(parsed.PHOTO_ROOT),
     photoCacheRoot: path.resolve(parsed.PHOTO_CACHE_ROOT),
     photoScanIntervalMinutes: parsed.PHOTO_SCAN_INTERVAL_MINUTES,
+    display: {
+      pageRotation: {
+        enabled: parsed.PAGE_ROTATION_ENABLED === 'true',
+        durationsSeconds: parsePageRotationSchedule(parsed.PAGE_ROTATION_SCHEDULE),
+      },
+      homePhotoRotationSeconds: parsed.HOME_PHOTO_ROTATION_SECONDS,
+    },
     homeAssistant: parsed.HA_BASE_URL && parsed.HA_TOKEN
       ? {
           baseUrl: parsed.HA_BASE_URL,

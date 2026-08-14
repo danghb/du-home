@@ -12,5 +12,22 @@ describe('loadConfig', () => {
     expect(config.homeAssistant?.weatherEntityId).toBeNull();
     expect(config.homeAssistant?.weatherRefreshMinutes).toBe(5);
     expect(config.homeAssistant?.dataRefreshSeconds).toBe(30);
+    expect(config.display.pageRotation).toEqual({
+      enabled: true,
+      durationsSeconds: { home: 30, weather: 30, status: 30, photos: 45 },
+    });
+    expect(config.display.homePhotoRotationSeconds).toBe(20);
+  });
+
+  it('parses per-page rotation durations and supports disabling rotation', () => {
+    const config = loadConfig({
+      PAGE_ROTATION_ENABLED: 'false',
+      PAGE_ROTATION_SCHEDULE: 'home:12, weather:25, invalid:0, broken',
+      HOME_PHOTO_ROTATION_SECONDS: '8',
+    });
+    expect(config.display).toEqual({
+      pageRotation: { enabled: false, durationsSeconds: { home: 12, weather: 25 } },
+      homePhotoRotationSeconds: 8,
+    });
   });
 });

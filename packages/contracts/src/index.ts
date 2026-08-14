@@ -112,6 +112,14 @@ export const photosSchema = z.object({
   photos: sectionSchema(z.array(photoSchema)),
 });
 
+export const displayConfigSchema = z.object({
+  pageRotation: z.object({
+    enabled: z.boolean(),
+    durationsSeconds: z.record(z.string(), z.number().positive()),
+  }),
+  homePhotoRotationSeconds: z.number().positive(),
+});
+
 export function apiEnvelopeSchema<T extends z.ZodType>(dataSchema: T) {
   return z.object({
     data: dataSchema,
@@ -125,6 +133,7 @@ export function apiEnvelopeSchema<T extends z.ZodType>(dataSchema: T) {
 export const dashboardResponseSchema = apiEnvelopeSchema(dashboardSchema);
 export const statusResponseSchema = apiEnvelopeSchema(statusSchema);
 export const photosResponseSchema = apiEnvelopeSchema(photosSchema);
+export const displayConfigResponseSchema = apiEnvelopeSchema(displayConfigSchema);
 
 export type TodoDue = z.infer<typeof todoDueSchema>;
 export type TodoItem = z.infer<typeof todoItemSchema>;
@@ -136,3 +145,4 @@ export type Photo = z.infer<typeof photoSchema>;
 export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;
 export type StatusResponse = z.infer<typeof statusResponseSchema>;
 export type PhotosResponse = z.infer<typeof photosResponseSchema>;
+export type DisplayConfigResponse = z.infer<typeof displayConfigResponseSchema>;

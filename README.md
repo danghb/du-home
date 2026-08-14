@@ -86,6 +86,9 @@ HA_TOKEN=你的长期访问令牌
 HA_WEATHER_ENTITY=weather.forecast_wo_de_jia
 DISPLAY_PORT=3000
 PHOTO_HOST_PATH=/volume1/photos
+HOME_PHOTO_ROTATION_SECONDS=20
+PAGE_ROTATION_ENABLED=true
+PAGE_ROTATION_SCHEDULE=home:30,weather:30,status:30,photos:45
 ```
 
 `PHOTO_HOST_PATH` 必须是 NAS 上真实存在的照片目录，容器只读挂载它。WebP 缩略图保存在 Docker 自动管理的 `photo-cache` 命名卷中，无需配置缓存目录；重建容器时缓存仍会保留。`.env` 已被 Git 和 Docker 构建上下文排除，不要提交或复制到公开位置。
@@ -104,5 +107,9 @@ sudo docker-compose logs --tail=100 family-display
 如果 GHCR 镜像设为私有，需要先创建具有 `read:packages` 权限的 GitHub Token，然后执行 `sudo docker login ghcr.io -u danghb`，在密码提示中输入 Token。公开镜像可以匿名拉取。
 
 浏览器打开 `http://NAS局域网地址:3000`。容器提供 `/api/v1/health` 健康检查，日志自动限制为 3 个、每个最多 10 MB。照片服务启动后在后台建立索引；缩略图与照片元数据索引都保存在 Docker 命名卷中，容器重启时会先恢复已有照片再静默扫描。首次扫描会渐进显示并定期保存进度，后续每 60 分钟扫描一次并复用未变化照片的缓存。
+
+显示方向由 URL 控制，不需要切换树莓派的系统显示方向：默认地址为竖屏；`?orientation=landscape` 将整张画布顺时针旋转为横屏；`?orientation=landscape-reverse` 反向旋转。页面切换时方向参数会保留。
+
+首页照片默认每 20 秒随机轮换且不会连续重复。页面自动轮换默认开启，`PAGE_ROTATION_SCHEDULE` 使用“页面 ID:停留秒数”的格式；当前页面 ID 为 `home`、`weather`、`status`、`photos`。设置 `PAGE_ROTATION_ENABLED=false` 可关闭自动轮换。修改 `.env` 后执行 `sudo docker-compose up -d --no-build` 重建容器使配置生效。
 
 仅当 NAS 能正常访问 Docker Hub 时，才使用 `sudo docker-compose build` 在 NAS 本地构建；日常部署不采用该方式。
