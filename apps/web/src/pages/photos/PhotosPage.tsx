@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { PhotosResponse } from '@family-display/contracts';
 import { api } from '../../services/api';
-import { useApiData } from '../../hooks/useApiData';
+import { readApiData, refreshApiData, useApiData } from '../../hooks/useApiData';
 import { PhotoImage } from '../../components/PhotoImage/PhotoImage';
-import { movePhotoIndex, pickRandomGalleryPhotoIndex, rememberGalleryPhoto, restoreGalleryPhotoIndex, selectRandomPhotoPreviews } from './photo-navigation';
+import { movePhotoIndex, nextPhotoIndexInBatch, rememberGalleryPhoto, restoreGalleryPhotoIndex, selectRandomPhotoPreviews } from './photo-navigation';
 import styles from './PhotosPage.module.css';
 
 const ROTATION_SECONDS = 12;
@@ -15,6 +16,7 @@ export function PhotosPage() {
   const load = useCallback(() => api.photos(), []);
   const state = useApiData(load, { cacheKey: 'photos' });
   const [rotationRevision, setRotationRevision] = useState(0);
+  const batchRequestInFlight = useRef(false);
 
   const photos = state.status === 'ready' && state.data.data.photos.status === 'ready'
     ? state.data.data.photos.data.items
@@ -26,12 +28,31 @@ export function PhotosPage() {
   const [currentIndex, setCurrentIndex] = useState(() => restoreGalleryPhotoIndex(photos));
   useEffect(() => {
     if (photos.length < 2) return;
-    const timer = window.setInterval(
-      () => setCurrentIndex((index) => pickRandomGalleryPhotoIndex(photos, index)),
-      ROTATION_SECONDS * 1_000,
-    );
-    return () => window.clearInterval(timer);
-  }, [photoBatchKey, rotationRevision]);
+    const timer = window.setTimeout(() => {
+      const nextIndex = nextPhotoIndexInBatch(currentIndex, photos.length);
+      if (nextIndex !== null) {
+        rememberGalleryPhoto(photos, nextIndex);
+        setCurrentIndex(nextIndex);
+        return;
+      }
+      if (batchRequestInFlight.current) return;
+      batchRequestInFlight.current = true;
+      void refreshApiData(api.photos, { cacheKey: 'photos', force: true })
+        .then(() => {
+          const refreshed = readApiData<PhotosResponse>('photos');
+          const nextPhotos = refreshed?.data.photos.status === 'ready'
+            ? refreshed.data.photos.data.items
+            : [];
+          if (nextPhotos.length) {
+            rememberGalleryPhoto(nextPhotos, 0);
+            setCurrentIndex(0);
+          }
+          setRotationRevision((revision) => revision + 1);
+        })
+        .finally(() => { batchRequestInFlight.current = false; });
+    }, ROTATION_SECONDS * 1_000);
+    return () => window.clearTimeout(timer);
+  }, [currentIndex, photoBatchKey, rotationRevision]);
   useEffect(() => setCurrentIndex(restoreGalleryPhotoIndex(photos)), [photoBatchKey]);
   useEffect(() => {
     if (photos.length < 2) return;
@@ -51,7 +72,7 @@ export function PhotosPage() {
   }, [photoBatchKey]);
 
   const current = photos[currentIndex] ?? null;
-  const memories = useMemo(() => selectRandomPhotoPreviews(photos, currentIndex), [photos, currentIndex]);
+  const memories = useMemo(() => selectRandomPhotoPreviews(photos, currentIndex), [photoBatchKey]);
   const now = new Date();
   const today = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Hong_Kong', month: 'numeric', day: 'numeric', weekday: 'short' }).format(now);
 
@@ -65,7 +86,7 @@ export function PhotosPage() {
       <div className={styles.caption}>
         <small>{current ? formatDate(current.capturedAt, { year: 'numeric', month: '2-digit', day: '2-digit' }).replaceAll('/', ' · ') : '家庭相册'}</small>
         <strong>{current?.title ?? '还没有可显示的照片'}</strong>
-        <span>{photos.length > 1 ? `↑ 上一张　↓ 下一张　·　${ROTATION_SECONDS} 秒后自动切换` : '将照片复制到 sample-photos 后重启服务'}</span>
+        <span>{photos.length > 1 ? `↑ 上一张　↓ 下一张　·　本批 ${currentIndex + 1}/${photos.length}　·　${ROTATION_SECONDS} 秒后切换` : '将照片复制到 sample-photos 后重启服务'}</span>
       </div>
     </section>
     <header className={styles.memories}><h2>随机回忆</h2><span>{photoTotal} 张</span></header>

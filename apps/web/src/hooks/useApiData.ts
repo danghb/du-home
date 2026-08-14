@@ -13,6 +13,7 @@ interface UseApiDataOptions {
 interface RefreshApiDataOptions {
   cacheKey: string;
   maxAgeMs?: number;
+  force?: boolean;
 }
 
 interface CacheEntry<T> {
@@ -75,13 +76,18 @@ export function refreshApiData<T>(loader: () => Promise<T>, options: RefreshApiD
   const maxAgeMs = options.maxAgeMs ?? 0;
   const fresh = entry.lastUpdatedAt > 0
     && (maxAgeMs === 0 || Date.now() - entry.lastUpdatedAt < maxAgeMs);
-  if (fresh) return Promise.resolve();
+  if (!options.force && fresh) return Promise.resolve();
   return refresh(entry);
 }
 
 export function apiDataAgeMs(cacheKey: string, now = Date.now()) {
   const entry = cache.get(cacheKey);
   return entry?.lastUpdatedAt ? Math.max(0, now - entry.lastUpdatedAt) : null;
+}
+
+export function readApiData<T>(cacheKey: string) {
+  const state = cache.get(cacheKey)?.state;
+  return state?.status === 'ready' ? state.data as T : null;
 }
 
 export function useApiData<T>(loader: () => Promise<T>, options: UseApiDataOptions): AsyncState<T> {
