@@ -2,17 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { useApiData } from '../../hooks/useApiData';
 import { PhotoImage } from '../../components/PhotoImage/PhotoImage';
-import { WeatherScene } from '../../components/WeatherScene/WeatherScene';
+import { PageGlance } from '../../components/PageGlance/PageGlance';
 import { pickRandomPhotoIndex, restoreHomePhotoIndex } from './home-photo-selection';
 import { selectDisplayedMemos } from './memo-display';
+import { useCurrentTime } from '../../hooks/useCurrentTime';
 import styles from './HomePage.module.css';
 
 export function HomePage() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 60_000);
-    return () => window.clearInterval(timer);
-  }, []);
+  const now = useCurrentTime();
   const load = useCallback(() => api.dashboard(), []);
   const loadWeather = useCallback(() => api.weather(), []);
   const loadPhotos = useCallback(() => api.photos(), []);
@@ -39,13 +36,15 @@ export function HomePage() {
     );
     return () => window.clearInterval(timer);
   }, [photoBatchKey, photoRotationSeconds]);
-  if (state.status === 'loading') return <div className="page-message">正在读取家庭信息…</div>;
-  if (state.status === 'error') return <div className="page-message">{state.message}</div>;
-  const dashboard = state.data.data;
   const weather = weatherState.status === 'ready' && weatherState.data.data.weather.status === 'ready'
     ? weatherState.data.data.weather.data
     : null;
-  const todayForecast = weather?.daily?.[0];
+  if (state.status !== 'ready') return <section className={styles.page}>
+    <PageGlance weather={weather} />
+    <div className="page-message">{state.status === 'loading' ? '正在读取家庭信息…' : state.message}</div>
+    <nav className="page-dots" aria-label="页面位置"><i className="active"/><i/><i/><i/></nav>
+  </section>;
+  const dashboard = state.data.data;
   const todayTodoCount = dashboard.todayTodoCount.status === 'ready' ? dashboard.todayTodoCount.data : 0;
   const memoItems = dashboard.memos.status === 'ready' ? dashboard.memos.data : [];
   const memos = selectDisplayedMemos(memoItems, now);
@@ -54,30 +53,11 @@ export function HomePage() {
   const recentPhoto = photos[photoIndex] ?? null;
   const allListsEmpty = memos.totalCount === 0 && shopping.length === 0;
   const overviewAlerts = household ? [...household.alerts].sort((a, b) => Number(b.severity === 'warning') - Number(a.severity === 'warning')).slice(0, 2) : [];
-  const timeText = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Hong_Kong', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
-  const dateParts = Object.fromEntries(new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Hong_Kong', month: 'numeric', day: 'numeric', weekday: 'short' }).formatToParts(now).map((part) => [part.type, part.value]));
-  const dateText = `${dateParts.month}月${dateParts.day}日 ${dateParts.weekday}`;
 
   return (
     <section className={styles.page}>
-      <header>
-        <time className={styles.time}>{timeText}</time>
-        <div className={styles.date}>{dateText}</div>
-        <div className={styles.weatherPanel}>
-          {weather ? (
-            <>
-              <div className={styles.weatherCopy}>
-                <span>今日天气</span>
-                <strong>{weather.temperature}<small>{weather.unit}</small></strong>
-                <b>{weather.condition}<i />室外</b>
-                <small className={styles.weatherRange}>最高 {todayForecast?.high ?? '—'}°　最低 {todayForecast?.low ?? '—'}°</small>
-              </div>
-              <div className={styles.weatherVisual}><WeatherScene condition={weather.condition} /></div>
-            </>
-          ) : <div className={styles.weatherUnavailable}>天气暂不可用</div>}
-        </div>
-        <div className={styles.summary}>今天有 {todayTodoCount} 项家庭事项</div>
-      </header>
+      <PageGlance weather={weather} />
+      <div className={styles.summary}>今天有 {todayTodoCount} 项家庭事项</div>
 
       <section className={`${styles.card} ${styles.memos} ${allListsEmpty ? styles.compactMemos : ''}`}>
         <div className={styles.cardTitle}>家庭备忘</div><span className={styles.count}>{memos.totalCount} 条</span>

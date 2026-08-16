@@ -15,7 +15,7 @@ interface ScheduledResource {
 
 const resources: ScheduledResource[] = [
   { cacheKey: 'dashboard', loader: api.dashboard, baseIntervalMs: 30_000, pageIds: ['home'] },
-  { cacheKey: 'weather', loader: api.weather, baseIntervalMs: 5 * 60_000, pageIds: ['home', 'weather'] },
+  { cacheKey: 'weather', loader: api.weather, baseIntervalMs: 5 * 60_000, pageIds: ['home', 'weather', 'status', 'photos'] },
   { cacheKey: 'status', loader: api.status, baseIntervalMs: 30_000, pageIds: ['status'] },
   { cacheKey: 'photos', loader: api.photos, baseIntervalMs: 60 * 60_000, pageIds: ['home', 'photos'] },
 ];

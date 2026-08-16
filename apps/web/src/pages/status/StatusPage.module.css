@@ -1,27 +1,29 @@
 .page { position: relative; width: 1080px; height: 1920px; background: transparent; color: #20231f; }
-.eyebrow { position: absolute; left: 72px; top: 72px; color: #747b74; font-size: 30px; font-weight: 600; }
-.page > h1 { position: absolute; left: 72px; top: 118px; margin: 0; font-size: 68px; line-height: 1.25; }
-.overview { position: absolute; left: 72px; top: 246px; width: 936px; height: 260px; border-radius: 30px; background: white; box-shadow: 0 12px 34px rgba(68,78,70,.055); }
-.overview h2 { margin: 29px 34px; font-size: 38px; }
-.metrics { display: grid; margin: 12px 34px; }
+.overview { position: absolute; left: 72px; top: 286px; width: 936px; height: 200px; border-radius: 30px; background: white; box-shadow: 0 12px 34px rgba(68,78,70,.055); }
+.metrics { position: absolute; left: 34px; right: 34px; top: 45px; display: grid; }
 .metric span { display: flex; align-items: center; gap: 10px; color: #747b74; font-size: 25px; }
 .metric span svg { width: 27px; height: 27px; stroke-width: 2.2; }
 .metric:nth-child(1) svg { color: #e5a33d; }
 .metric:nth-child(2) svg { color: #4d8fd7; }
 .metric:nth-child(3) svg { color: #e56b67; }
 .metric strong { display: block; margin-top: 19px; font-size: 46px; }
-.roomsHeading { position: absolute; left: 72px; top: 552px; width: 936px; display: flex; align-items: center; justify-content: space-between; }
-.roomsHeading h2 { margin: 0; font-size: 40px; }
+.roomsHeading { position: absolute; left: 72px; top: 522px; width: 936px; display: flex; align-items: center; justify-content: flex-end; }
 .roomsHeading span { color: #747b74; font-size: 25px; }
-.primaryRooms { position: absolute; left: 72px; top: 626px; width: 936px; display: grid; gap: 16px; }
+.primaryRooms { position: absolute; left: 72px; top: 566px; width: 936px; display: grid; gap: 16px; }
 .primaryRoom { position: relative; height: 245px; padding: 28px 34px; border-radius: 30px; background: white; box-shadow: 0 12px 34px rgba(68,78,70,.055); }
-.masterRoom { height: 300px; }
-.kitchenRoom { height: 190px; }
+.masterRoom { height: 340px; }
+.kitchenRoom { height: 220px; }
 .roomTitle { display: flex; align-items: center; justify-content: space-between; }
 .roomTitle h3 { margin: 0; display: flex; align-items: center; gap: 12px; font-size: 37px; }
-.roomTitle h3 svg, .otherRoomList h3 svg { width: 30px; height: 30px; padding: 5px; border-radius: 10px; color: white; stroke-width: 2.5; }
-.orange { background: #e5a33d; }
-.green { background: #3ba66d; }
+.roomIcon { width: 40px; height: 40px; display: inline-grid; flex: 0 0 40px; place-items: center; border-radius: 12px; }
+.roomIcon svg { width: 24px; height: 24px; stroke-width: 2.3; }
+.roomIcon_living { color: #bd7518; background: #fff0d8; }
+.roomIcon_master { color: #5576c9; background: #e8efff; }
+.roomIcon_kitchen { color: #cf694c; background: #ffebe4; }
+.roomIcon_study { color: #7962b6; background: #eee9fb; }
+.roomIcon_guest { color: #3f9273; background: #e6f4ef; }
+.roomIcon_balcony { color: #3e88ad; background: #e5f3fb; }
+.roomIconDefault { color: #68766d; background: #edf0ec; }
 .roomTitle b { padding: 9px 17px; border-radius: 20px; background: #e6f1fb; color: #4d8fd7; font-size: 22px; }
 .environmentData { position: absolute; left: 34px; top: 92px; width: 300px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .environmentData span { margin-bottom: 7px; display: flex; align-items: center; gap: 7px; color: #747b74; font-size: 23px; }
@@ -38,11 +40,12 @@
 .deviceValue { min-width: 0; margin-left: 8px; display: block; text-align: right; }
 .deviceValue strong { display: block; margin-left: 0; }
 .deviceValue small { display: block; margin-top: 3px; color: #7d867e; font-size: 16px; white-space: nowrap; }
-.secondaryGrid { position: absolute; left: 72px; top: 1409px; width: 936px; display: grid; grid-template-columns: 1fr; gap: 12px; }
+.secondaryGrid { position: absolute; left: 72px; top: 1419px; width: 936px; display: grid; grid-template-columns: 1fr; gap: 12px; }
 .secondaryGrid article { min-width: 0; height: 102px; padding: 14px 24px; display: grid; grid-template-columns: 170px 1fr; align-items: center; border-radius: 26px; background: white; box-shadow: 0 12px 34px rgba(68,78,70,.055); }
 .secondaryGrid article.balconyRoom { height: 174px; }
 .secondaryGrid h3 { margin: 0; display: flex; align-items: center; gap: 11px; font-size: 31px; }
-.secondaryGrid h3 svg { width: 28px; height: 28px; padding: 5px; border-radius: 9px; color: white; stroke-width: 2.5; }
+.secondaryGrid h3 .roomIcon { width: 38px; height: 38px; flex-basis: 38px; border-radius: 11px; }
+.secondaryGrid h3 .roomIcon svg { width: 22px; height: 22px; }
 .secondaryDevices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
 .secondaryDevices div { min-width: 0; height: 58px; padding: 0 14px; display: flex; align-items: center; justify-content: space-between; border-radius: 15px; background: #f5f6f2; }
 .balconyRoom .secondaryDevices div { height: 64px; }

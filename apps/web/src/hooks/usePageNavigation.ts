@@ -1,10 +1,27 @@
 import { useEffect, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import type { NavigateFunction } from 'react-router-dom';
 import type { DisplayPageDefinition } from '../app/pages';
 
 interface PageRotationOptions {
   enabled: boolean;
   durationsSeconds: Record<string, number>;
+}
+
+type TransitionDocument = Document & {
+  startViewTransition?: (update: () => void) => unknown;
+};
+
+function navigateTo(navigate: NavigateFunction, pathname: string, search: string) {
+  const transitionDocument = document as TransitionDocument;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduceMotion && transitionDocument.startViewTransition) {
+    transitionDocument.startViewTransition(() => {
+      flushSync(() => navigate({ pathname, search }));
+    });
+    return;
+  }
+  navigate({ pathname, search });
 }
 
 export function usePageNavigation(
@@ -22,7 +39,7 @@ export function usePageNavigation(
     if (currentIndex < 0) return;
     const go = (offset: number) => {
       const target = enabled[(currentIndex + offset + enabled.length) % enabled.length];
-      if (target) navigate({ pathname: target.path, search });
+      if (target) navigateTo(navigate, target.path, search);
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'ArrowRight') go(1);
@@ -55,7 +72,7 @@ export function usePageNavigation(
     if (currentIndex < 0 || !durationSeconds) return;
     const timer = window.setTimeout(() => {
       const target = enabled[(currentIndex + 1) % enabled.length];
-      if (target) navigate({ pathname: target.path, search });
+      if (target) navigateTo(navigate, target.path, search);
     }, durationSeconds * 1_000);
     return () => window.clearTimeout(timer);
   }, [navigate, pages, pathname, rotation, search]);

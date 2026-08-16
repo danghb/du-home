@@ -1,7 +1,16 @@
-import type { StatusResponse } from '@family-display/contracts';
+import type { StatusResponse, Weather } from '@family-display/contracts';
 import { StatusPageContent } from '../pages/status/StatusPage';
 
 const updatedAt = '2026-08-16T13:08:00+08:00';
+
+const demoWeather: Weather = {
+  condition: '多云',
+  temperature: 30,
+  unit: '°C',
+  humidity: 70,
+  hourly: [],
+  daily: [{ date: '今天', condition: '多云', low: 26, high: 33 }],
+};
 
 const demoStatus: StatusResponse = {
   data: {
@@ -67,5 +76,5 @@ const demoStatus: StatusResponse = {
 };
 
 export function StatusDemoPage() {
-  return <StatusPageContent response={demoStatus}/>;
+  return <StatusPageContent response={demoStatus} weather={demoWeather}/>;
 }

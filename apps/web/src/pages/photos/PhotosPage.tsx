@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PhotosResponse } from '@family-display/contracts';
 import { api } from '../../services/api';
 import { readApiData, refreshApiData, useApiData } from '../../hooks/useApiData';
 import { PhotoImage } from '../../components/PhotoImage/PhotoImage';
-import { movePhotoIndex, nextPhotoIndexInBatch, rememberGalleryPhoto, restoreGalleryPhotoIndex, selectRandomPhotoPreviews } from './photo-navigation';
+import { PageGlance } from '../../components/PageGlance/PageGlance';
+import { movePhotoIndex, nextPhotoIndexInBatch, rememberGalleryPhoto, restoreGalleryPhotoIndex } from './photo-navigation';
 import styles from './PhotosPage.module.css';
 
 const ROTATION_SECONDS = 12;
@@ -14,16 +15,15 @@ function formatDate(value: string, options: Intl.DateTimeFormatOptions) {
 
 export function PhotosPage() {
   const load = useCallback(() => api.photos(), []);
+  const loadWeather = useCallback(() => api.weather(), []);
   const state = useApiData(load, { cacheKey: 'photos' });
+  const weatherState = useApiData(loadWeather, { cacheKey: 'weather' });
   const [rotationRevision, setRotationRevision] = useState(0);
   const batchRequestInFlight = useRef(false);
 
   const photos = state.status === 'ready' && state.data.data.photos.status === 'ready'
     ? state.data.data.photos.data.items
     : [];
-  const photoTotal = state.status === 'ready' && state.data.data.photos.status === 'ready'
-    ? state.data.data.photos.data.total
-    : 0;
   const photoBatchKey = photos.map((photo) => photo.id).join('|');
   const [currentIndex, setCurrentIndex] = useState(() => restoreGalleryPhotoIndex(photos));
   useEffect(() => {
@@ -72,28 +72,26 @@ export function PhotosPage() {
   }, [photoBatchKey]);
 
   const current = photos[currentIndex] ?? null;
-  const memories = useMemo(() => selectRandomPhotoPreviews(photos, currentIndex), [photoBatchKey]);
-  const now = new Date();
-  const today = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Hong_Kong', month: 'numeric', day: 'numeric', weekday: 'short' }).format(now);
+  const weather = weatherState.status === 'ready' && weatherState.data.data.weather.status === 'ready'
+    ? weatherState.data.data.weather.data
+    : null;
 
-  if (state.status === 'loading') return <div className="page-message">正在读取家庭相册…</div>;
-  if (state.status === 'error') return <div className="page-message">{state.message}</div>;
+  if (state.status !== 'ready') return <section className={styles.page}>
+    <PageGlance weather={weather} />
+    <div className="page-message">{state.status === 'loading' ? '正在读取家庭相册…' : state.message}</div>
+    <nav className="page-dots"><i/><i/><i/><i className="active"/></nav>
+  </section>;
 
   return <section className={styles.page}>
-    <h1>家庭相册</h1><p>把平常的小日子留在这里</p><time>{today}</time>
+    <PageGlance weather={weather} />
+    <h1>家庭相册</h1><p>把平常的小日子留在这里</p>
     <section className={styles.hero}>
       <PhotoImage className={styles.heroArt} photo={current} source="display" />
       <div className={styles.caption}>
         <small>{current ? formatDate(current.capturedAt, { year: 'numeric', month: '2-digit', day: '2-digit' }).replaceAll('/', ' · ') : '家庭相册'}</small>
         <strong>{current?.title ?? '还没有可显示的照片'}</strong>
-        <span>{photos.length > 1 ? `↑ 上一张　↓ 下一张　·　本批 ${currentIndex + 1}/${photos.length}　·　${ROTATION_SECONDS} 秒后切换` : '将照片复制到 sample-photos 后重启服务'}</span>
       </div>
     </section>
-    <header className={styles.memories}><h2>随机回忆</h2><span>{photoTotal} 张</span></header>
-    <div className={styles.grid}>{memories.map((photo, index) => <article key={photo.id}>
-      <PhotoImage photo={photo} variant={index % 3} />
-      <b>{formatDate(photo.capturedAt, { month: 'numeric', day: 'numeric' })}</b>
-    </article>)}</div>
     <nav className="page-dots"><i/><i/><i/><i className="active"/></nav>
   </section>;
 }

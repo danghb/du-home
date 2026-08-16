@@ -1,7 +1,10 @@
-import type { RoomStatus, StatusResponse } from '@family-display/contracts';
+import type { RoomStatus, StatusResponse, Weather } from '@family-display/contracts';
 import { useCallback } from 'react';
 import {
   Blinds,
+  BedDouble,
+  BedSingle,
+  BookOpen,
   CookingPot,
   Droplets,
   Flame,
@@ -13,12 +16,15 @@ import {
   Refrigerator,
   Shirt,
   Snowflake,
+  Sofa,
+  SunMedium,
   Thermometer,
   WashingMachine,
   type LucideIcon,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useApiData } from '../../hooks/useApiData';
+import { PageGlance } from '../../components/PageGlance/PageGlance';
 import styles from './StatusPage.module.css';
 
 function DeviceIcon({ label }: { label: string }) {
@@ -35,6 +41,21 @@ function DeviceIcon({ label }: { label: string }) {
 }
 
 type Device = NonNullable<RoomStatus['devices']>[number];
+
+const roomIcons: Record<string, LucideIcon> = {
+  living: Sofa,
+  master: BedDouble,
+  kitchen: CookingPot,
+  study: BookOpen,
+  guest: BedSingle,
+  balcony: SunMedium,
+};
+
+function RoomIcon({ roomId }: { roomId: string }) {
+  const Icon = roomIcons[roomId] ?? House;
+  const toneClass = styles[`roomIcon_${roomId}`] ?? styles.roomIconDefault;
+  return <span className={`${styles.roomIcon} ${toneClass}`} aria-hidden="true"><Icon /></span>;
+}
 
 function DeviceState({ device }: { device: Device }) {
   const toneClass = device.tone === 'active'
@@ -53,7 +74,7 @@ function DeviceState({ device }: { device: Device }) {
   </div>;
 }
 
-export function StatusPageContent({ response }: { response: StatusResponse }) {
+export function StatusPageContent({ response, weather }: { response: StatusResponse; weather: Weather | null }) {
   const rooms = response.data.rooms.status === 'ready' ? response.data.rooms.data : [];
   const temperatures = rooms.map((room) => room.temperature).filter((value): value is number => value !== null);
   const humidities = rooms.map((room) => room.humidity).filter((value): value is number => value !== null);
@@ -70,21 +91,21 @@ export function StatusPageContent({ response }: { response: StatusResponse }) {
   if (overview?.doorStatus && overview.doorStatus !== '未知') metrics.push({ label: '门锁状态', value: overview.doorStatus, icon: LockKeyhole });
 
   return <section className={styles.page}>
-    <div className={styles.eyebrow}>家庭状态</div><h1>家里现在怎么样</h1>
-    {metrics.length > 0 && <section className={styles.overview}><h2>全屋概览</h2><div className={styles.metrics} style={{ gridTemplateColumns: `repeat(${metrics.length}, 1fr)` }}>
+    <PageGlance weather={weather} />
+    {metrics.length > 0 && <section className={styles.overview}><div className={styles.metrics} style={{ gridTemplateColumns: `repeat(${metrics.length}, 1fr)` }}>
       {metrics.map(({ label, value, icon: Icon }) => <div className={styles.metric} key={label}><span><Icon />{label}</span><strong>{value}</strong></div>)}
     </div></section>}
-    <div className={styles.roomsHeading}><h2>房间状态</h2>{updatedTime && <span>更新于 {updatedTime}</span>}</div>
-    <div className={styles.primaryRooms}>{environmentRooms.map((room, index) => <article className={`${styles.primaryRoom} ${room.id === 'master' ? styles.masterRoom : ''} ${room.id === 'kitchen' ? styles.kitchenRoom : ''}`} key={room.id}>
-      <div className={styles.roomTitle}><h3><House className={index ? styles.green : styles.orange}/>{room.name}</h3><b>{room.summary}</b></div>
+    {updatedTime && <div className={styles.roomsHeading}><span>更新于 {updatedTime}</span></div>}
+    <div className={styles.primaryRooms}>{environmentRooms.map((room) => <article className={`${styles.primaryRoom} ${room.id === 'master' ? styles.masterRoom : ''} ${room.id === 'kitchen' ? styles.kitchenRoom : ''}`} key={room.id}>
+      <div className={styles.roomTitle}><h3><RoomIcon roomId={room.id}/>{room.name}</h3><b>{room.summary}</b></div>
       <div className={styles.environmentData}>
         {room.temperature !== null && <div><span><Thermometer />温度</span><strong>{room.temperature.toFixed(1)}°C</strong></div>}
         {room.humidity !== null && <div><span><Droplets />湿度</span><strong>{room.humidity}%</strong></div>}
       </div>
       {room.devices?.length ? <div className={styles.primaryDevices}>{room.devices.map((device) => <DeviceState key={device.label} device={device}/>)}</div> : null}
     </article>)}</div>
-    <div className={styles.secondaryGrid}>{deviceRooms.map((room, index) => <article className={room.id === 'balcony' ? styles.balconyRoom : ''} key={room.id}>
-      <h3><House className={index ? styles.green : styles.orange}/>{room.name}</h3>
+    <div className={styles.secondaryGrid}>{deviceRooms.map((room) => <article className={room.id === 'balcony' ? styles.balconyRoom : ''} key={room.id}>
+      <h3><RoomIcon roomId={room.id}/>{room.name}</h3>
       <div className={styles.secondaryDevices}>{room.devices?.map((device) => <DeviceState key={device.label} device={device}/>)}</div>
     </article>)}</div>
     <nav className="page-dots"><i/><i/><i className="active"/><i/></nav>
@@ -93,7 +114,16 @@ export function StatusPageContent({ response }: { response: StatusResponse }) {
 
 export function StatusPage() {
   const load = useCallback(() => api.status(), []);
+  const loadWeather = useCallback(() => api.weather(), []);
   const state = useApiData(load, { cacheKey: 'status' });
-  if (state.status !== 'ready') return <div className="page-message">{state.status === 'loading' ? '正在读取家庭状态…' : state.message}</div>;
-  return <StatusPageContent response={state.data}/>;
+  const weatherState = useApiData(loadWeather, { cacheKey: 'weather' });
+  const weather = weatherState.status === 'ready' && weatherState.data.data.weather.status === 'ready'
+    ? weatherState.data.data.weather.data
+    : null;
+  if (state.status !== 'ready') return <section className={styles.page}>
+    <PageGlance weather={weather}/>
+    <div className="page-message">{state.status === 'loading' ? '正在读取家庭状态…' : state.message}</div>
+    <nav className="page-dots"><i/><i/><i className="active"/><i/></nav>
+  </section>;
+  return <StatusPageContent response={state.data} weather={weather}/>;
 }

@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { WeatherScene } from '../../components/WeatherScene/WeatherScene';
+import { PageGlance } from '../../components/PageGlance/PageGlance';
 import { useApiData } from '../../hooks/useApiData';
 import { api } from '../../services/api';
 import styles from './WeatherPage.module.css';
@@ -15,15 +16,21 @@ function conditionSymbol(condition: string) {
 export function WeatherPage() {
   const load = useCallback(() => api.weather(), []);
   const state = useApiData(load, { cacheKey: 'weather' });
-  if (state.status === 'loading') return <div className="page-message">正在读取天气…</div>;
-  if (state.status === 'error') return <div className="page-message">{state.message}</div>;
+  if (state.status !== 'ready') return <section className={styles.page}>
+    <div className={styles.skyGlow} />
+    <PageGlance compact />
+    <div className="page-message">{state.status === 'loading' ? '正在读取天气…' : state.message}</div>
+    <nav className="page-dots" aria-label="页面位置"><i/><i className="active"/><i/><i/></nav>
+  </section>;
 
   const section = state.data.data.weather;
-  if (section.status !== 'ready') return <div className="page-message">天气暂不可用</div>;
+  if (section.status !== 'ready') return <section className={styles.page}>
+    <div className={styles.skyGlow} />
+    <PageGlance compact />
+    <div className="page-message">天气暂不可用</div>
+    <nav className="page-dots" aria-label="页面位置"><i/><i className="active"/><i/><i/></nav>
+  </section>;
   const weather = section.data;
-  const updatedTime = section.updatedAt
-    ? new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(section.updatedAt))
-    : '刚刚';
   const hourly = weather.hourly ?? [];
   const daily = weather.daily ?? [];
   const min = daily.length ? Math.min(...daily.map((day) => day.low)) : 0;
@@ -33,10 +40,7 @@ export function WeatherPage() {
   return (
     <section className={styles.page}>
       <div className={styles.skyGlow} />
-      <header className={styles.header}>
-        <span>家庭天气</span>
-        <time>更新于 {updatedTime}</time>
-      </header>
+      <PageGlance compact />
 
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
