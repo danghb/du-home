@@ -19,7 +19,7 @@ export function createStatusRoutes(config: AppConfig, householdService: HomeAssi
       }
       return statusResponseSchema.parse({ data: {
         rooms: { status: 'ready', data: household.rooms, updatedAt: household.updatedAt },
-        overview: { status: 'ready', data: { activeDeviceCount: household.activeDeviceCount, doorStatus: household.doorStatus }, updatedAt: household.updatedAt },
+        overview: { status: 'ready', data: { doorStatus: household.doorStatus }, updatedAt: household.updatedAt },
       }, meta: { generatedAt, mode: 'live' } });
     });
   };

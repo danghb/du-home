@@ -75,6 +75,10 @@ export const mockStatus: StatusResponse = {
           devices: [{ label: '空调', state: '关闭', tone: 'normal' }, { label: '床头灯', state: '开启', tone: 'active' }],
         },
         {
+          id: 'kitchen', name: '厨房', temperature: 30, humidity: 70, summary: '请留意环境',
+          devices: [{ label: '冰箱', state: '正常', tone: 'success' }, { label: '电饭煲', state: '待机中', tone: 'normal' }],
+        },
+        {
           id: 'study', name: '书房', temperature: null, humidity: null, summary: '设备正常',
           devices: [{ label: '空调', state: '关闭', tone: 'normal' }, { label: '灯', state: '关闭', tone: 'normal' }],
         },
@@ -82,12 +86,22 @@ export const mockStatus: StatusResponse = {
           id: 'guest', name: '次卧', temperature: null, humidity: null, summary: '设备正常',
           devices: [{ label: '空调', state: '关闭', tone: 'normal' }, { label: '地暖', state: '关闭', tone: 'normal' }],
         },
+        {
+          id: 'balcony', name: '阳台', temperature: null, humidity: null, summary: '设备状态',
+          devices: [
+            { label: '晾衣架', state: '离线', tone: 'warning' },
+            { label: '阳台灯', state: '离线', tone: 'warning' },
+            { label: '夜灯', state: '离线', tone: 'warning' },
+            { label: '洗衣机', state: '关闭', tone: 'normal' },
+            { label: '干衣机', state: '关闭', tone: 'normal' },
+          ],
+        },
       ],
       updatedAt: generatedAt,
     },
     overview: {
       status: 'ready',
-      data: { activeDeviceCount: 2, doorStatus: '已上锁' },
+      data: { doorStatus: '已上锁' },
       updatedAt: generatedAt,
     },
   },

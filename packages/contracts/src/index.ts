@@ -51,7 +51,12 @@ export const roomStatusSchema = z.object({
   temperature: z.number().nullable(),
   humidity: z.number().nullable(),
   summary: z.string(),
-  devices: z.array(z.object({ label: z.string(), state: z.string(), tone: z.enum(['normal', 'active', 'warning']) })).optional(),
+  devices: z.array(z.object({
+    label: z.string(),
+    state: z.string(),
+    detail: z.string().optional(),
+    tone: z.enum(['normal', 'success', 'active', 'warning']),
+  })).optional(),
 });
 
 export const householdAlertSchema = z.object({
@@ -96,7 +101,6 @@ export const dashboardSchema = z.object({
 export const statusSchema = z.object({
   rooms: sectionSchema(z.array(roomStatusSchema)),
   overview: sectionSchema(z.object({
-    activeDeviceCount: z.number().int().nonnegative(),
     doorStatus: z.string(),
   })).optional(),
 });

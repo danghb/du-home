@@ -3,44 +3,51 @@
 .page > h1 { position: absolute; left: 72px; top: 118px; margin: 0; font-size: 68px; line-height: 1.25; }
 .overview { position: absolute; left: 72px; top: 246px; width: 936px; height: 260px; border-radius: 30px; background: white; box-shadow: 0 12px 34px rgba(68,78,70,.055); }
 .overview h2 { margin: 29px 34px; font-size: 38px; }
-.metrics { display: grid; grid-template-columns: repeat(4, 1fr); margin: 12px 34px; }
+.metrics { display: grid; margin: 12px 34px; }
 .metric span { display: flex; align-items: center; gap: 10px; color: #747b74; font-size: 25px; }
 .metric span svg { width: 27px; height: 27px; stroke-width: 2.2; }
 .metric:nth-child(1) svg { color: #e5a33d; }
 .metric:nth-child(2) svg { color: #4d8fd7; }
-.metric:nth-child(3) svg { color: #3ba66d; }
-.metric:nth-child(4) svg { color: #e56b67; }
+.metric:nth-child(3) svg { color: #e56b67; }
 .metric strong { display: block; margin-top: 19px; font-size: 46px; }
 .roomsHeading { position: absolute; left: 72px; top: 552px; width: 936px; display: flex; align-items: center; justify-content: space-between; }
 .roomsHeading h2 { margin: 0; font-size: 40px; }
 .roomsHeading span { color: #747b74; font-size: 25px; }
-.primaryRooms { position: absolute; left: 72px; top: 626px; width: 936px; display: grid; gap: 24px; }
-.primaryRoom { position: relative; height: 300px; padding: 28px 34px; border-radius: 30px; background: white; box-shadow: 0 12px 34px rgba(68,78,70,.055); }
-.masterRoom { height: 340px; }
+.primaryRooms { position: absolute; left: 72px; top: 626px; width: 936px; display: grid; gap: 16px; }
+.primaryRoom { position: relative; height: 245px; padding: 28px 34px; border-radius: 30px; background: white; box-shadow: 0 12px 34px rgba(68,78,70,.055); }
+.masterRoom { height: 300px; }
+.kitchenRoom { height: 190px; }
 .roomTitle { display: flex; align-items: center; justify-content: space-between; }
 .roomTitle h3 { margin: 0; display: flex; align-items: center; gap: 12px; font-size: 37px; }
 .roomTitle h3 svg, .otherRoomList h3 svg { width: 30px; height: 30px; padding: 5px; border-radius: 10px; color: white; stroke-width: 2.5; }
 .orange { background: #e5a33d; }
 .green { background: #3ba66d; }
 .roomTitle b { padding: 9px 17px; border-radius: 20px; background: #e6f1fb; color: #4d8fd7; font-size: 22px; }
-.environmentData { position: absolute; left: 34px; top: 108px; width: 300px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.environmentData { position: absolute; left: 34px; top: 92px; width: 300px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .environmentData span { margin-bottom: 7px; display: flex; align-items: center; gap: 7px; color: #747b74; font-size: 23px; }
 .environmentData span svg { width: 23px; height: 23px; }
 .environmentData strong { font-size: 39px; }
-.primaryDevices { position: absolute; left: 370px; right: 34px; top: 100px; display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+.primaryDevices { position: absolute; left: 370px; right: 34px; top: 78px; display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
 .primaryDevices div { min-width: 0; height: 66px; padding: 0 17px; display: flex; align-items: center; justify-content: space-between; border-radius: 17px; background: #f5f6f2; }
-.primaryDevices span, .otherDevices span { display: flex; align-items: center; gap: 9px; color: #747b74; font-size: 22px; white-space: nowrap; }
-.primaryDevices span svg, .otherDevices span svg { width: 24px; height: 24px; stroke-width: 2.1; }
+.primaryDevices div > span:first-child, .otherDevices div > span:first-child { display: flex; align-items: center; gap: 9px; color: #747b74; font-size: 22px; white-space: nowrap; }
+.primaryDevices div > span:first-child svg, .otherDevices div > span:first-child svg { width: 24px; height: 24px; stroke-width: 2.1; }
 .primaryDevices strong { margin-left: 8px; font-size: 25px; white-space: nowrap; }
 .toneActive { color: #3ba66d; }
+.toneSuccess { color: #3ba66d; }
 .toneWarning { color: #d58b24; }
-.secondaryGrid { position: absolute; left: 72px; top: 1314px; width: 936px; display: grid; grid-template-columns: 1fr; gap: 18px; }
-.secondaryGrid article { min-width: 0; height: 118px; padding: 18px 24px; display: grid; grid-template-columns: 170px 1fr; align-items: center; border-radius: 26px; background: white; box-shadow: 0 12px 34px rgba(68,78,70,.055); }
+.deviceValue { min-width: 0; margin-left: 8px; display: block; text-align: right; }
+.deviceValue strong { display: block; margin-left: 0; }
+.deviceValue small { display: block; margin-top: 3px; color: #7d867e; font-size: 16px; white-space: nowrap; }
+.secondaryGrid { position: absolute; left: 72px; top: 1409px; width: 936px; display: grid; grid-template-columns: 1fr; gap: 12px; }
+.secondaryGrid article { min-width: 0; height: 102px; padding: 14px 24px; display: grid; grid-template-columns: 170px 1fr; align-items: center; border-radius: 26px; background: white; box-shadow: 0 12px 34px rgba(68,78,70,.055); }
+.secondaryGrid article.balconyRoom { height: 174px; }
 .secondaryGrid h3 { margin: 0; display: flex; align-items: center; gap: 11px; font-size: 31px; }
 .secondaryGrid h3 svg { width: 28px; height: 28px; padding: 5px; border-radius: 9px; color: white; stroke-width: 2.5; }
 .secondaryDevices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
 .secondaryDevices div { min-width: 0; height: 58px; padding: 0 14px; display: flex; align-items: center; justify-content: space-between; border-radius: 15px; background: #f5f6f2; }
-.secondaryDevices span { display: flex; align-items: center; gap: 6px; color: #747b74; font-size: 20px; white-space: nowrap; }
-.secondaryDevices span svg { width: 21px; height: 21px; }
+.balconyRoom .secondaryDevices div { height: 64px; }
+.secondaryDevices div > span:first-child { display: flex; align-items: center; gap: 6px; color: #747b74; font-size: 20px; white-space: nowrap; }
+.secondaryDevices div > span:first-child svg { width: 21px; height: 21px; }
 .secondaryDevices strong { margin-left: 6px; font-size: 24px; white-space: nowrap; }
+.secondaryDevices .deviceValue strong { margin-left: 0; }
 .noDevices { height: 58px; display: grid; place-items: center; border-radius: 15px; background: #f5f6f2; color: #98a19a; font-size: 23px; }
