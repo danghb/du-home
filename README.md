@@ -93,9 +93,11 @@ PAGE_ROTATION_SCHEDULE=home:30,weather:30,status:30,photos:45
 
 `PHOTO_HOST_PATH` 必须是 NAS 上真实存在的照片目录，容器只读挂载它。WebP 缩略图和按需生成的屏幕显示图保存在 Docker 自动管理的 `photo-cache` 命名卷中，无需配置缓存目录；重建容器时缓存仍会保留。主照片接口不会把数 MB 的原图传给浏览器，而是在首次显示时生成最大 `1280 × 1600`、质量 82 的 WebP，后续直接复用缓存。媒体响应带有私有缓存、ETag 和 Last-Modified；相同图片再次出现时浏览器可直接复用或通过 `304` 确认，无需重复下载图片内容。`.env` 已被 Git 和 Docker 构建上下文排除，不要提交或复制到公开位置。
 
-家庭相册每次从后端取得最多 64 张随机照片，主图按该批次顺序逐张播放；下方 6 张随机回忆在本批次内保持不变。播放完最后一张后才请求下一批，避免每次轮换同时更换 7 张图片。
+家庭相册每次从后端取得最多 64 张随机照片，主图按该批次顺序逐张播放。播放完最后一张后才请求下一批，避免每次轮换都重新请求照片列表。
 
 照片索引会跳过群晖的 `@eaDir`、`#recycle`、`@tmp` 等系统目录，防止将 `SYNOPHOTO_THUMB_*.jpg` 低清媒体缩略图误认为原照片。升级后恢复旧索引时会立即过滤已有错误记录，后台扫描完成后再分批清理 Docker 缓存卷中的孤立缩略图；不会修改只读挂载的 NAS 照片目录。
+
+照片索引还会排除高置信度截图：文件名明确包含 Screenshot/截图，或图片缺少相机、镜头和曝光 EXIF 且尺寸正好匹配常见 Apple 屏幕分辨率。普通竖拍照片不会仅因比例相似而被过滤。同一目录下同名的 JPG/PNG 与 MOV 会自动识别为一组 iPhone Live Photo；静态图作为封面，MOV 在首次展示时按需转为兼容浏览器的 H.264 MP4 并写入缓存卷，静音播放一次后回到静态图。独立 MOV 不会加入照片轮播，NAS 原文件始终以只读方式访问。
 
 ### 3. 拉取和启动
 
@@ -114,6 +116,6 @@ sudo docker-compose logs --tail=100 family-display
 
 显示方向由 URL 控制，不需要切换树莓派的系统显示方向：默认地址为竖屏；`?orientation=landscape` 将整张画布顺时针旋转为横屏；`?orientation=landscape-reverse` 反向旋转。页面切换时方向参数会保留。
 
-照片接口不会再把完整索引发送给前端，而是每次从后端随机抽取最多 64 张并同时返回图库总数；前端共享这一批数据并每 5 分钟静默换一批。首页照片默认每 20 秒随机轮换且不会连续重复；家庭相册首次进入、自动轮换和下方六张回忆也使用随机选择，并避免主图连续重复。页面自动轮换默认开启，`PAGE_ROTATION_SCHEDULE` 使用“页面 ID:停留秒数”的格式；当前页面 ID 为 `home`、`weather`、`status`、`photos`。设置 `PAGE_ROTATION_ENABLED=false` 可关闭自动轮换。修改 `.env` 后执行 `sudo docker-compose up -d --no-build` 重建容器使配置生效。
+照片接口不会再把完整索引发送给前端，而是每次从后端随机抽取最多 64 张并同时返回图库总数；前端共享这一批数据并每 5 分钟静默换一批。首页照片默认每 20 秒随机轮换且不会连续重复；家庭相册会按本批照片顺序播放，并避免主图连续重复。页面自动轮换默认开启，`PAGE_ROTATION_SCHEDULE` 使用“页面 ID:停留秒数”的格式；当前页面 ID 为 `home`、`weather`、`status`、`photos`。设置 `PAGE_ROTATION_ENABLED=false` 可关闭自动轮换。修改 `.env` 后执行 `sudo docker-compose up -d --no-build` 重建容器使配置生效。
 
 仅当 NAS 能正常访问 Docker Hub 时，才使用 `sudo docker-compose build` 在 NAS 本地构建；日常部署不采用该方式。

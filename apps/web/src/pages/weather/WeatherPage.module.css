@@ -1,6 +1,6 @@
 .page { position: relative; width: 1080px; height: 1920px; overflow: hidden; color: #20231f; background: linear-gradient(180deg, #dceef8 0%, #edf5f5 31%, #f7f6f1 68%); }
 .skyGlow { position: absolute; right: -160px; top: -210px; width: 780px; height: 720px; border-radius: 50%; background: radial-gradient(circle, rgba(255,237,170,.76), rgba(204,231,246,.24) 48%, transparent 72%); animation: sky 8s ease-in-out infinite; }
-.hero { position: absolute; left: 72px; right: 72px; top: 190px; height: 420px; display: flex; align-items: center; }
+.hero { position: absolute; left: 72px; right: 72px; top: 142px; height: 420px; display: flex; align-items: center; }
 .heroCopy { width: 500px; z-index: 2; }
 .heroCopy > span { display: block; color: #526662; font-size: 26px; font-weight: 600; }
 .heroCopy > strong { display: block; margin-top: -8px; font-size: 150px; line-height: 1.1; letter-spacing: -8px; }
@@ -9,7 +9,7 @@
 .heroCopy > p { margin: 12px 0 0; color: #526662; font-size: 24px; font-weight: 600; }
 .hero > :last-child { position: absolute; right: -22px; top: 48px; }
 .glassCard { border: 1px solid rgba(255,255,255,.76); border-radius: 30px; background: rgba(255,255,255,.62); box-shadow: 0 18px 42px rgba(78,105,116,.07); backdrop-filter: blur(24px); }
-.hourly { position: absolute; left: 72px; top: 628px; width: 936px; height: 304px; padding: 26px 32px; }
+.hourly { position: absolute; left: 72px; top: 580px; width: 936px; height: 304px; padding: 26px 32px; }
 .hourly > p { height: 45px; margin: 0 0 18px; padding-bottom: 20px; border-bottom: 1px solid rgba(107,127,126,.2); color: #50625f; font-size: 22px; }
 .hourList { display: grid; grid-template-columns: repeat(6, 1fr); }
 .hour { display: flex; flex-direction: column; align-items: center; gap: 3px; }
@@ -17,7 +17,7 @@
 .hour strong { font-size: 28px; }
 .hour small { height: 20px; color: #4d8fd7; font-size: 18px; font-weight: 600; }
 .noForecast { grid-column: 1 / -1; padding-top: 48px; color: #74827f; font-size: 24px; text-align: center; }
-.forecast { position: absolute; left: 72px; top: 964px; width: 936px; height: 474px; padding: 28px 32px; }
+.forecast { position: absolute; left: 72px; top: 916px; width: 936px; height: 474px; padding: 28px 32px; }
 .forecast h2 { margin: 0 0 18px; color: #50625f; font-size: 24px; font-weight: 600; }
 .day { height: 76px; display: grid; grid-template-columns: 150px 72px 68px 1fr 68px; align-items: center; border-top: 1px solid rgba(107,127,126,.18); }
 .day > strong { font-size: 26px; }
@@ -26,7 +26,7 @@
 .noDaily { padding: 80px 0; color: #74827f; font-size: 24px; text-align: center; }
 .range { position: relative; height: 8px; margin: 0 12px; border-radius: 5px; background: rgba(100,121,121,.12); }
 .range b { position: absolute; top: 0; min-width: 42px; max-width: 100%; height: 8px; border-radius: 5px; background: linear-gradient(90deg, #71b6e4, #f5c14e); }
-.metrics { position: absolute; left: 72px; top: 1470px; width: 936px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.metrics { position: absolute; left: 72px; top: 1422px; width: 936px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
 .metrics article { height: 158px; padding: 27px 28px; }
 .metrics span { display: block; color: #60716d; font-size: 22px; font-weight: 600; }
 .metrics strong { display: block; margin-top: 7px; font-size: 42px; }

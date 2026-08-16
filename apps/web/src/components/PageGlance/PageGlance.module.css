@@ -15,8 +15,8 @@
 .weatherRange { display: block; margin-top: 7px; color: #747b74; font-size: 19px; font-weight: 600; white-space: nowrap; }
 .weatherVisual { position: absolute; right: 8px; top: 38px; z-index: 2; }
 .unavailable { width: 100%; color: #747b74; font-size: 25px; font-weight: 600; text-align: center; }
-.compact { top: 42px; height: 126px; }
-.compact .clock time { top: 0; font-size: 78px; line-height: 1; }
-.compact .clock span { top: 92px; left: 4px; gap: 9px; }
+.compact { top: 54px; height: 58px; }
+.compact .clock time { top: 0; font-size: 40px; line-height: 1.25; letter-spacing: -1px; }
+.compact .clock span { left: 150px; top: 10px; gap: 9px; }
 .compact .clock span b { font-size: 24px; }
 .compact .clock span small { font-size: 21px; }

@@ -46,7 +46,7 @@
 .overviewAlerts strong { color: #747b74; font-size: 21px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .compactPhoto { left: 72px; top: 1198px; width: 936px; height: 520px; }
 .photoMore { position: absolute; right: 32px; top: 31px; color: #4d8fd7; font-size: 22px; font-weight: 600; }
-.photoArt { position: absolute !important; left: 24px; top: 90px; width: 474px; height: 730px; border-radius: 24px; object-fit: cover; }
+.photoArt { position: absolute !important; left: 24px; top: 90px; width: 474px; height: 730px; border-radius: 24px; object-fit: contain; object-position: center; background: #202622; }
 .photoCaption { position: absolute; left: 52px; right: 40px; bottom: 42px; color: white; font-size: 27px; z-index: 5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .compactPhoto .photoArt { left: 32px; width: 872px; height: 398px; }
 .compactPhoto .photoCaption { left: 64px; bottom: 37px; }

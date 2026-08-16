@@ -145,4 +145,31 @@ describe('PhotoIndexService', () => {
     expect(sample).toHaveLength(4);
     expect(new Set(sample.map((photo) => photo.id)).size).toBe(4);
   });
+
+  it('filters high-confidence screenshots and pairs Live Photo motion files', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'family-display-photo-'));
+    temporaryDirectories.push(root);
+    const source = path.join(root, 'source');
+    const cache = path.join(root, 'cache');
+    await mkdir(source);
+    await sharp({ create: { width: 800, height: 600, channels: 3, background: '#aaccee' } })
+      .jpeg().toFile(path.join(source, 'normal.jpg'));
+    await sharp({ create: { width: 1179, height: 2556, channels: 3, background: '#eeeeee' } })
+      .png().toFile(path.join(source, 'IMG_1000.PNG'));
+    await sharp({ create: { width: 700, height: 900, channels: 3, background: '#dddddd' } })
+      .png().toFile(path.join(source, 'Screenshot 2026.png'));
+    await sharp({ create: { width: 900, height: 700, channels: 3, background: '#77aadd' } })
+      .jpeg().toFile(path.join(source, 'IMG_2000.JPG'));
+    await writeFile(path.join(source, 'IMG_2000.MOV'), 'synthetic motion placeholder');
+    const service = new PhotoIndexService(source, cache, 60);
+
+    await service.scan();
+
+    const photos = service.list();
+    expect(photos).toHaveLength(2);
+    const livePhoto = photos.find((photo) => photo.motionUrl);
+    expect(livePhoto?.motionUrl).toBe(`/media/motion/${livePhoto?.id}`);
+    expect(livePhoto).not.toHaveProperty('motionSourcePath');
+    expect(livePhoto).not.toHaveProperty('motionPath');
+  });
 });

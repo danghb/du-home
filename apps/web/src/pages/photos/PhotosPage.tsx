@@ -84,7 +84,6 @@ export function PhotosPage() {
 
   return <section className={styles.page}>
     <PageGlance weather={weather} />
-    <h1>家庭相册</h1><p>把平常的小日子留在这里</p>
     <section className={styles.hero}>
       <PhotoImage className={styles.heroArt} photo={current} source="display" />
       <div className={styles.caption}>

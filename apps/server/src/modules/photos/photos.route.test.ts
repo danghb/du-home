@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import fastify from 'fastify';
@@ -42,6 +42,33 @@ describe('photo media routes', () => {
     expect(cached.body).toBe('');
     const original = await app.inject({ method: 'GET', url: `/media/original/${photo.id}` });
     expect(original.statusCode).toBe(404);
+    await app.close();
+  });
+
+  it('serves cached Live Photo video with byte ranges', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'family-display-motion-'));
+    temporaryDirectories.push(root);
+    const source = path.join(root, 'source');
+    const cache = path.join(root, 'cache');
+    const motionPath = path.join(root, 'motion.mp4');
+    await mkdir(source);
+    await writeFile(motionPath, Buffer.from('0123456789'));
+    const index = new PhotoIndexService(source, cache, 60);
+    index.motion = async () => motionPath;
+    const app = fastify();
+    await app.register(createMediaRoutes(index), { prefix: '/media' });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/media/motion/abc',
+      headers: { range: 'bytes=2-5' },
+    });
+
+    expect(response.statusCode).toBe(206);
+    expect(response.headers['content-type']).toContain('video/mp4');
+    expect(response.headers['accept-ranges']).toBe('bytes');
+    expect(response.headers['content-range']).toBe('bytes 2-5/10');
+    expect(response.body).toBe('2345');
     await app.close();
   });
 });

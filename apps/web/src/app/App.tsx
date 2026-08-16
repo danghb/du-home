@@ -20,13 +20,12 @@ export function App() {
     ? configState.data.data.pageRotation
     : { enabled: false, durationsSeconds: {} };
   usePageNavigation(displayPages, location.pathname, location.search, navigate, pageRotation);
-  const nativeViewTransitions = typeof (document as Document & { startViewTransition?: unknown }).startViewTransition === 'function';
 
   return (
     <DisplayViewport>
       <div className="weather-shell">
         <WeatherAtmosphere />
-        <div className={`route-layer ${nativeViewTransitions ? 'native-view-transition' : ''}`} key={location.pathname}><Routes>
+        <div className="route-layer"><Routes>
           {enabledPages.map((page) => (
             <Route key={page.id} path={page.path} element={<page.component />} />
           ))}

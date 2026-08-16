@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { spawn } from 'node:child_process';
 import { createReadStream } from 'node:fs';
 import { mkdir, readFile, readdir, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -6,14 +7,26 @@ import exifr from 'exifr';
 import sharp from 'sharp';
 import type { Photo } from '@family-display/contracts';
 
-const SUPPORTED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
-const INDEX_VERSION = 1;
+const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+const MOTION_EXTENSIONS = new Set(['.mov']);
+const DISCOVERED_EXTENSIONS = new Set([...IMAGE_EXTENSIONS, ...MOTION_EXTENSIONS]);
+const INDEX_VERSION = 2;
+const SCREENSHOT_RULE_VERSION = 1;
 const INDEX_FILE = 'index.json';
 const DISPLAY_DIRECTORY = 'display';
+const MOTION_DIRECTORY = 'motion';
 const DISPLAY_MAX_WIDTH = 1280;
 const DISPLAY_MAX_HEIGHT = 1600;
 const IGNORED_DIRECTORY_NAMES = new Set(['@eaDir', '#recycle', '@tmp', '.AppleDouble']);
-const CACHED_PHOTO_FILE_PATTERN = /^[a-f0-9]{24}\.webp$/;
+const CACHED_IMAGE_FILE_PATTERN = /^[a-f0-9]{24}\.webp$/;
+const CACHED_MOTION_FILE_PATTERN = /^[a-f0-9]{24}\.mp4$/;
+const SCREENSHOT_NAME_PATTERN = /(?:screenshot|screen[ _-]?shot|截屏|截图|屏幕快照)/i;
+const SCREEN_DIMENSIONS = new Set([
+  '640x1136', '750x1334', '828x1792', '1080x1920', '1080x2340', '1125x2436',
+  '1170x2532', '1179x2556', '1206x2622', '1242x2208', '1242x2688', '1284x2778',
+  '1290x2796', '1320x2868', '1536x2048', '1640x2360', '1668x2224', '1668x2388',
+  '2048x2732', '2064x2752',
+]);
 
 function containsIgnoredDirectory(relativePath: string) {
   return relativePath.split(/[\\/]/).some((segment) => IGNORED_DIRECTORY_NAMES.has(segment));
@@ -21,8 +34,10 @@ function containsIgnoredDirectory(relativePath: string) {
 
 interface IndexedPhoto extends Photo {
   sourcePath: string;
+  motionSourcePath: string | null;
   thumbnailPath: string;
   displayPath: string;
+  motionPath: string;
   signature: string;
 }
 
@@ -32,6 +47,7 @@ interface PersistedPhoto {
   signature: string;
   capturedAt: string;
   title: string;
+  motionRelativePath?: string;
 }
 
 interface PersistedIndex {
@@ -45,6 +61,7 @@ export class PhotoIndexService {
   private scanInProgress = false;
   private stopped = false;
   private readonly displayInFlight = new Map<string, Promise<string | null>>();
+  private readonly motionInFlight = new Map<string, Promise<string | null>>();
 
   constructor(
     private readonly photoRoot: string,
@@ -108,7 +125,19 @@ export class PhotoIndexService {
     this.displayInFlight.set(id, task);
     return task;
   }
-  stream(filePath: string) { return createReadStream(filePath); }
+  async motion(id: string) {
+    const photo = this.photos.get(id);
+    if (!photo?.motionSourcePath) return null;
+    const existing = this.motionInFlight.get(id);
+    if (existing) return existing;
+
+    const task = this.ensureMotionVideo(photo).finally(() => this.motionInFlight.delete(id));
+    this.motionInFlight.set(id, task);
+    return task;
+  }
+  stream(filePath: string, range?: { start: number; end: number }) {
+    return createReadStream(filePath, range);
+  }
 
   async restore() {
     await mkdir(this.cacheRoot, { recursive: true });
@@ -122,6 +151,7 @@ export class PhotoIndexService {
     }
     if (parsed.version !== INDEX_VERSION || !Array.isArray(parsed.photos)) {
       this.onError(new Error('Unsupported photo index format'), indexPath);
+      await this.persist().catch((error) => this.onError(error, indexPath));
       return;
     }
 
@@ -136,15 +166,22 @@ export class PhotoIndexService {
       }
       const sourcePath = path.resolve(rootPath, photo.relativePath);
       if (sourcePath !== rootPath && !sourcePath.startsWith(`${rootPath}${path.sep}`)) continue;
+      const motionSourcePath = photo.motionRelativePath
+        ? path.resolve(rootPath, photo.motionRelativePath)
+        : null;
+      if (motionSourcePath && motionSourcePath !== rootPath && !motionSourcePath.startsWith(`${rootPath}${path.sep}`)) continue;
       restored.set(photo.id, {
         id: photo.id,
         mediaUrl: `/media/display/${photo.id}`,
         thumbnailUrl: `/media/thumbnail/${photo.id}`,
+        ...(motionSourcePath ? { motionUrl: `/media/motion/${photo.id}` } : {}),
         capturedAt: photo.capturedAt,
         title: photo.title,
         sourcePath,
+        motionSourcePath,
         thumbnailPath: path.join(this.cacheRoot, `${photo.id}.webp`),
         displayPath: path.join(this.cacheRoot, DISPLAY_DIRECTORY, `${photo.id}.webp`),
+        motionPath: path.join(this.cacheRoot, MOTION_DIRECTORY, `${photo.id}.mp4`),
         signature: photo.signature,
       });
     }
@@ -168,22 +205,36 @@ export class PhotoIndexService {
         return;
       }
 
+      const imageFiles = files.filter((filePath) => IMAGE_EXTENSIONS.has(path.extname(filePath).toLowerCase()));
+      const motionByKey = new Map(files
+        .filter((filePath) => MOTION_EXTENSIONS.has(path.extname(filePath).toLowerCase()))
+        .map((filePath) => [this.mediaPairKey(path.relative(this.photoRoot, filePath)), filePath]));
       const next = new Map<string, IndexedPhoto>();
       let cursor = 0;
       let processed = 0;
       let checkpoint = Promise.resolve();
       const processNext = async () => {
-        while (cursor < files.length) {
-          const filePath = files[cursor++];
+        while (cursor < imageFiles.length) {
+          const filePath = imageFiles[cursor++];
           if (!filePath) continue;
           const relativePath = path.relative(this.photoRoot, filePath);
           const id = createHash('sha256').update(relativePath).digest('hex').slice(0, 24);
           const existing = this.photos.get(id);
           try {
-            const indexed = await this.indexFile(filePath, relativePath, id, existing);
-            next.set(id, indexed);
-            // New and changed photos become visible while the rest of the library is still scanning.
-            this.photos.set(id, indexed);
+            const indexed = await this.indexFile(
+              filePath,
+              motionByKey.get(this.mediaPairKey(relativePath)) ?? null,
+              relativePath,
+              id,
+              existing,
+            );
+            if (indexed) {
+              next.set(id, indexed);
+              // New and changed photos become visible while the rest of the library is still scanning.
+              this.photos.set(id, indexed);
+            } else {
+              this.photos.delete(id);
+            }
           } catch (error) {
             // A temporarily unreadable file must not remove its last known-good entry.
             if (existing) next.set(id, existing);
@@ -199,7 +250,7 @@ export class PhotoIndexService {
         }
       };
       await Promise.all(Array.from(
-        { length: Math.min(Math.max(1, this.concurrency), Math.max(1, files.length)) },
+        { length: Math.min(Math.max(1, this.concurrency), Math.max(1, imageFiles.length)) },
         () => processNext(),
       ));
       await checkpoint;
@@ -213,30 +264,84 @@ export class PhotoIndexService {
     }
   }
 
-  private async indexFile(filePath: string, relativePath: string, id: string, existing: IndexedPhoto | undefined) {
+  private async indexFile(
+    filePath: string,
+    motionSourcePath: string | null,
+    relativePath: string,
+    id: string,
+    existing: IndexedPhoto | undefined,
+  ) {
     const fileStat = await stat(filePath);
-    const signature = `${relativePath}:${fileStat.size}:${fileStat.mtimeMs}`;
+    const motionStat = motionSourcePath ? await stat(motionSourcePath).catch(() => null) : null;
+    const signature = [
+      `screenshot-rules-${SCREENSHOT_RULE_VERSION}`,
+      relativePath,
+      fileStat.size,
+      fileStat.mtimeMs,
+      motionSourcePath ? path.relative(this.photoRoot, motionSourcePath) : '',
+      motionStat?.size ?? '',
+      motionStat?.mtimeMs ?? '',
+    ].join(':');
     if (existing?.signature === signature) return existing;
+
+    const metadata = await sharp(filePath).metadata();
+    const exif = await exifr.parse(filePath, [
+      'DateTimeOriginal', 'Make', 'Model', 'LensModel', 'ExposureTime', 'FNumber', 'ISO',
+    ]).catch(() => null) as {
+      DateTimeOriginal?: Date;
+      Make?: string;
+      Model?: string;
+      LensModel?: string;
+      ExposureTime?: number;
+      FNumber?: number;
+      ISO?: number;
+    } | null;
+    if (this.isLikelyScreenshot(relativePath, metadata.width, metadata.height, exif)) return null;
 
     const thumbnailPath = path.join(this.cacheRoot, `${id}.webp`);
     const displayPath = path.join(this.cacheRoot, DISPLAY_DIRECTORY, `${id}.webp`);
+    const motionPath = path.join(this.cacheRoot, MOTION_DIRECTORY, `${id}.mp4`);
     const thumbnailStat = await stat(thumbnailPath).catch(() => null);
     if (!thumbnailStat || thumbnailStat.mtimeMs < fileStat.mtimeMs) {
       await sharp(filePath).autoOrient().resize({ width: 640, height: 420, fit: 'cover' }).webp({ quality: 80 }).toFile(thumbnailPath);
     }
-    const exif = await exifr.parse(filePath, ['DateTimeOriginal']).catch(() => null) as { DateTimeOriginal?: Date } | null;
     const capturedDate = exif?.DateTimeOriginal instanceof Date ? exif.DateTimeOriginal : fileStat.mtime;
     return {
       id,
       mediaUrl: `/media/display/${id}`,
       thumbnailUrl: `/media/thumbnail/${id}`,
+      ...(motionStat ? { motionUrl: `/media/motion/${id}` } : {}),
       capturedAt: capturedDate.toISOString(),
       title: `${capturedDate.getMonth() + 1}月${capturedDate.getDate()}日的照片`,
       sourcePath: filePath,
+      motionSourcePath: motionStat ? motionSourcePath : null,
       thumbnailPath,
       displayPath,
+      motionPath,
       signature,
     } satisfies IndexedPhoto;
+  }
+
+  private isLikelyScreenshot(
+    relativePath: string,
+    width: number | undefined,
+    height: number | undefined,
+    exif: { Make?: string; Model?: string; LensModel?: string; ExposureTime?: number; FNumber?: number; ISO?: number } | null,
+  ) {
+    if (SCREENSHOT_NAME_PATTERN.test(path.basename(relativePath))) return true;
+    if (!width || !height) return false;
+    const hasCameraMetadata = Boolean(
+      exif?.Make || exif?.Model || exif?.LensModel
+      || exif?.ExposureTime !== undefined || exif?.FNumber !== undefined || exif?.ISO !== undefined,
+    );
+    if (hasCameraMetadata) return false;
+    const dimensions = `${Math.min(width, height)}x${Math.max(width, height)}`;
+    return SCREEN_DIMENSIONS.has(dimensions);
+  }
+
+  private mediaPairKey(relativePath: string) {
+    const parsed = path.parse(relativePath);
+    return path.join(parsed.dir, parsed.name).toLowerCase();
   }
 
   private async ensureDisplayImage(photo: IndexedPhoto) {
@@ -267,8 +372,55 @@ export class PhotoIndexService {
     }
   }
 
+  private async ensureMotionVideo(photo: IndexedPhoto) {
+    if (!photo.motionSourcePath) return null;
+    const cachedStat = await stat(photo.motionPath).catch(() => null);
+    const sourceStat = await stat(photo.motionSourcePath).catch(() => null);
+    if (cachedStat && (!sourceStat || cachedStat.mtimeMs >= sourceStat.mtimeMs)) return photo.motionPath;
+    if (!sourceStat) return null;
+
+    await mkdir(path.dirname(photo.motionPath), { recursive: true });
+    const temporaryPath = `${photo.motionPath}.tmp`;
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const child = spawn(process.env.FFMPEG_PATH ?? 'ffmpeg', [
+          '-hide_banner', '-loglevel', 'error', '-y',
+          '-i', photo.motionSourcePath!,
+          '-map', '0:v:0', '-an',
+          '-vf', 'scale=1280:1280:force_original_aspect_ratio=decrease:force_divisible_by=2',
+          '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
+          '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
+          '-f', 'mp4', temporaryPath,
+        ], { windowsHide: true });
+        let stderr = '';
+        child.stderr.on('data', (chunk: Buffer) => {
+          if (stderr.length < 4_096) stderr += chunk.toString().slice(0, 4_096 - stderr.length);
+        });
+        child.once('error', reject);
+        child.once('close', (code) => {
+          if (code === 0) resolve();
+          else reject(new Error(`ffmpeg exited with ${code}: ${stderr.trim()}`));
+        });
+      });
+      await rename(temporaryPath, photo.motionPath);
+      return photo.motionPath;
+    } catch (error) {
+      await unlink(temporaryPath).catch(() => undefined);
+      this.onError(error, photo.motionSourcePath);
+      return null;
+    }
+  }
+
   private toPublicPhoto(photo: IndexedPhoto): Photo {
-    const { sourcePath: _sourcePath, thumbnailPath: _thumbnailPath, displayPath: _displayPath, signature: _signature, ...publicPhoto } = photo;
+    const {
+      sourcePath: _sourcePath,
+      motionSourcePath: _motionSourcePath,
+      thumbnailPath: _thumbnailPath,
+      displayPath: _displayPath,
+      motionPath: _motionPath,
+      signature: _signature,
+      ...publicPhoto
+    } = photo;
     return publicPhoto;
   }
 
@@ -283,6 +435,7 @@ export class PhotoIndexService {
         signature: photo.signature,
         capturedAt: photo.capturedAt,
         title: photo.title,
+        ...(photo.motionSourcePath ? { motionRelativePath: path.relative(this.photoRoot, photo.motionSourcePath) } : {}),
       })),
     };
     await writeFile(temporaryPath, JSON.stringify(persisted), 'utf8');
@@ -300,7 +453,12 @@ export class PhotoIndexService {
       && typeof photo.signature === 'string'
       && typeof photo.capturedAt === 'string'
       && Number.isFinite(Date.parse(photo.capturedAt))
-      && typeof photo.title === 'string';
+      && typeof photo.title === 'string'
+      && (photo.motionRelativePath === undefined || (
+        typeof photo.motionRelativePath === 'string'
+        && !path.isAbsolute(photo.motionRelativePath)
+        && !photo.motionRelativePath.split(/[\\/]/).includes('..')
+      ));
   }
 
   private async walk(directory: string): Promise<string[]> {
@@ -310,21 +468,24 @@ export class PhotoIndexService {
       if (entry.isSymbolicLink()) continue;
       const entryPath = path.join(directory, entry.name);
       if (entry.isDirectory() && !IGNORED_DIRECTORY_NAMES.has(entry.name)) files.push(...await this.walk(entryPath));
-      if (entry.isFile() && SUPPORTED_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) files.push(entryPath);
+      if (entry.isFile() && DISCOVERED_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) files.push(entryPath);
     }
     return files;
   }
 
   private async pruneOrphanedCache() {
     const activeIds = new Set(this.photos.keys());
-    const pruneDirectory = async (directory: string) => {
+    const activeMotionIds = new Set([...this.photos.values()]
+      .filter((photo) => photo.motionSourcePath)
+      .map((photo) => photo.id));
+    const pruneDirectory = async (directory: string, pattern: RegExp, retainedIds = activeIds) => {
       const entries = await readdir(directory, { withFileTypes: true }).catch((error: NodeJS.ErrnoException) => {
         if (error.code === 'ENOENT') return [];
         throw error;
       });
       const orphanedEntries = entries
-        .filter((entry) => entry.isFile() && CACHED_PHOTO_FILE_PATTERN.test(entry.name))
-        .filter((entry) => !activeIds.has(path.basename(entry.name, '.webp')));
+        .filter((entry) => entry.isFile() && pattern.test(entry.name))
+        .filter((entry) => !retainedIds.has(path.parse(entry.name).name));
       for (let offset = 0; offset < orphanedEntries.length; offset += 32) {
         await Promise.all(orphanedEntries.slice(offset, offset + 32).map((entry) => (
           unlink(path.join(directory, entry.name)).catch((error: NodeJS.ErrnoException) => {
@@ -333,7 +494,8 @@ export class PhotoIndexService {
         )));
       }
     };
-    await pruneDirectory(this.cacheRoot);
-    await pruneDirectory(path.join(this.cacheRoot, DISPLAY_DIRECTORY));
+    await pruneDirectory(this.cacheRoot, CACHED_IMAGE_FILE_PATTERN);
+    await pruneDirectory(path.join(this.cacheRoot, DISPLAY_DIRECTORY), CACHED_IMAGE_FILE_PATTERN);
+    await pruneDirectory(path.join(this.cacheRoot, MOTION_DIRECTORY), CACHED_MOTION_FILE_PATTERN, activeMotionIds);
   }
 }

@@ -70,6 +70,7 @@ export const photoSchema = z.object({
   id: z.string(),
   mediaUrl: z.string(),
   thumbnailUrl: z.string(),
+  motionUrl: z.string().optional(),
   capturedAt: z.iso.datetime({ offset: true }),
   title: z.string(),
 });
