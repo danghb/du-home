@@ -8,6 +8,9 @@ import { movePhotoIndex, nextPhotoIndexInBatch, rememberGalleryPhoto, restoreGal
 import styles from './PhotosPage.module.css';
 
 const ROTATION_SECONDS = 12;
+const MEDIA_MAX_WIDTH = 888;
+const MEDIA_MAX_HEIGHT = 1420;
+const FRAME_PADDING = 24;
 
 function formatDate(value: string, options: Intl.DateTimeFormatOptions) {
   return new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Hong_Kong', ...options }).format(new Date(value));
@@ -19,6 +22,7 @@ export function PhotosPage() {
   const state = useApiData(load, { cacheKey: 'photos' });
   const weatherState = useApiData(loadWeather, { cacheKey: 'weather' });
   const [rotationRevision, setRotationRevision] = useState(0);
+  const [aspectRatio, setAspectRatio] = useState(MEDIA_MAX_WIDTH / MEDIA_MAX_HEIGHT);
   const batchRequestInFlight = useRef(false);
 
   const photos = state.status === 'ready' && state.data.data.photos.status === 'ready'
@@ -72,6 +76,16 @@ export function PhotosPage() {
   }, [photoBatchKey]);
 
   const current = photos[currentIndex] ?? null;
+  const mediaWidth = Math.min(MEDIA_MAX_WIDTH, MEDIA_MAX_HEIGHT * aspectRatio);
+  const mediaHeight = mediaWidth / aspectRatio;
+  const heroWidth = mediaWidth + FRAME_PADDING * 2;
+  const heroHeight = mediaHeight + FRAME_PADDING * 2;
+  const heroStyle = {
+    left: (1080 - heroWidth) / 2,
+    top: 286 + (1468 - heroHeight) / 2,
+    width: heroWidth,
+    height: heroHeight,
+  };
   const weather = weatherState.status === 'ready' && weatherState.data.data.weather.status === 'ready'
     ? weatherState.data.data.weather.data
     : null;
@@ -84,8 +98,13 @@ export function PhotosPage() {
 
   return <section className={styles.page}>
     <PageGlance weather={weather} />
-    <section className={styles.hero}>
-      <PhotoImage className={styles.heroArt} photo={current} source="display" />
+    <section className={styles.hero} style={heroStyle}>
+      <PhotoImage
+        className={styles.heroArt}
+        photo={current}
+        source="display"
+        onAspectRatioChange={setAspectRatio}
+      />
       <div className={styles.caption}>
         <small>{current ? formatDate(current.capturedAt, { year: 'numeric', month: '2-digit', day: '2-digit' }).replaceAll('/', ' · ') : '家庭相册'}</small>
         <strong>{current?.title ?? '还没有可显示的照片'}</strong>

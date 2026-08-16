@@ -8,9 +8,17 @@ interface PhotoImageProps {
   variant?: number;
   alt?: string | undefined;
   source?: 'thumbnail' | 'display';
+  onAspectRatioChange?: (aspectRatio: number) => void;
 }
 
-export function PhotoImage({ photo, className = '', variant = 0, alt, source = 'thumbnail' }: PhotoImageProps) {
+export function PhotoImage({
+  photo,
+  className = '',
+  variant = 0,
+  alt,
+  source = 'thumbnail',
+  onAspectRatioChange,
+}: PhotoImageProps) {
   const [displayedPhoto, setDisplayedPhoto] = useState(photo);
   const [failed, setFailed] = useState(false);
   const [motionActive, setMotionActive] = useState(Boolean(photo?.motionUrl && source === 'display'));
@@ -50,9 +58,22 @@ export function PhotoImage({ photo, className = '', variant = 0, alt, source = '
       muted
       playsInline
       preload="auto"
+      onLoadedMetadata={(event) => {
+        const video = event.currentTarget;
+        if (video.videoWidth && video.videoHeight) onAspectRatioChange?.(video.videoWidth / video.videoHeight);
+      }}
       onEnded={() => setMotionActive(false)}
       onError={() => setMotionActive(false)}
     />;
   }
-  return <img className={className} src={imageUrl} alt={alt ?? displayedPhoto.title} onError={() => setFailed(true)} />;
+  return <img
+    className={className}
+    src={imageUrl}
+    alt={alt ?? displayedPhoto.title}
+    onLoad={(event) => {
+      const image = event.currentTarget;
+      if (image.naturalWidth && image.naturalHeight) onAspectRatioChange?.(image.naturalWidth / image.naturalHeight);
+    }}
+    onError={() => setFailed(true)}
+  />;
 }
